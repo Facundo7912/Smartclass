@@ -7,6 +7,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import indexRoutes from './routes/index.routes.js';
 import courseRoutes from './routes/course.routes.js';
+import classRoutes from './routes/class.routes.js';
 // Cargar variables de entorno
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use((req, res, next) => {
 // ========== RUTAS ==========
 app.use('/api', indexRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/classes', classRoutes);
 
 app.get('/', (req, res) => {
   res.json({
