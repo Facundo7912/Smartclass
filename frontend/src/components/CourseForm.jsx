@@ -1,0 +1,88 @@
+import { useState } from 'react'
+import { createCourse } from '../services/course.service.js'
+
+const CourseForm = ({ onCourseCreated }) => {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setError('')
+
+    if (!name.trim() || !description.trim()) {
+      setError('Completa ambos campos.')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      await createCourse({ name: name.trim(), description: description.trim() })
+      setName('')
+      setDescription('')
+      onCourseCreated?.()
+    } catch (err) {
+      setError('No se pudo crear el curso.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formStyle = {
+    display: 'grid',
+    gap: '14px',
+    padding: '18px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '16px',
+    background: '#ffffff'
+  }
+
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: '14px',
+    border: '1px solid #d1d5db',
+    background: '#f9fafb'
+  }
+
+  const buttonStyle = {
+    border: 'none',
+    borderRadius: '14px',
+    padding: '14px 18px',
+    background: '#4338ca',
+    color: '#ffffff',
+    cursor: loading ? 'not-allowed' : 'pointer'
+  }
+
+  return (
+    <form style={formStyle} onSubmit={handleSubmit}>
+      <h2 style={{ margin: 0 }}>Nuevo curso</h2>
+      {error && <p style={{ color: '#b91c1c', margin: 0 }}>{error}</p>}
+      <label style={{ display: 'grid', gap: '8px' }}>
+        Nombre
+        <input
+          style={inputStyle}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="Nombre del curso"
+        />
+      </label>
+      <label style={{ display: 'grid', gap: '8px' }}>
+        Descripción
+        <textarea
+          style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }}
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          placeholder="Descripción del curso"
+        />
+      </label>
+      <button style={buttonStyle} type="submit" disabled={loading}>
+        {loading ? 'Creando...' : 'Crear curso'}
+      </button>
+    </form>
+  )
+}
+
+export default CourseForm
