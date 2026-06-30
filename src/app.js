@@ -45,7 +45,18 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err);
-  res.status(500).json({ error: 'Error interno del servidor' });
+
+  const status = err.status || 500;
+  const response = {
+    error: err.message || 'Error interno del servidor'
+  };
+
+  if (process.env.NODE_ENV !== 'production') {
+    if (err.details) response.details = err.details;
+    if (err.hint) response.hint = err.hint;
+  }
+
+  res.status(status).json(response);
 });
 
 export default app;

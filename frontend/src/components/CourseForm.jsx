@@ -1,11 +1,32 @@
-import { useState } from 'react'
-import { createCourse } from '../services/course.service.js'
+import { useEffect, useState } from 'react'
+import { createCourse, updateCourse } from '../services/course.service.js'
 
-const CourseForm = ({ onCourseCreated }) => {
+const CourseForm = ({ onCourseCreated, editingCourse, onCancelEdit }) => {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    if (editingCourse) {
+      setName(editingCourse.name || '')
+      setDescription(editingCourse.description || '')
+    } else {
+      setName('')
+      setDescription('')
+    }
+  }, [editingCourse])
+
+  useEffect(() => {
+    if (!success) return
+
+    const timer = window.setTimeout(() => {
+      setSuccess('')
+    }, 3000)
+
+    return () => window.clearTimeout(timer)
+  }, [success])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -19,12 +40,23 @@ const CourseForm = ({ onCourseCreated }) => {
     setLoading(true)
 
     try {
-      await createCourse({ name: name.trim(), description: description.trim() })
+      if (editingCourse) {
+        await updateCourse(editingCourse.id ?? editingCourse._id, {
+          name: name.trim(),
+          description: description.trim()
+        })
+        setSuccess('Curso actualizado correctamente.')
+      } else {
+        await createCourse({ name: name.trim(), description: description.trim() })
+        setSuccess('Curso creado correctamente.')
+      }
+
       setName('')
       setDescription('')
       onCourseCreated?.()
+      onCancelEdit?.()
     } catch (err) {
-      setError('No se pudo crear el curso.')
+      setError(editingCourse ? 'No se pudo actualizar el curso.' : 'No se pudo crear el curso.')
     } finally {
       setLoading(false)
     }
@@ -58,8 +90,9 @@ const CourseForm = ({ onCourseCreated }) => {
 
   return (
     <form style={formStyle} onSubmit={handleSubmit}>
-      <h2 style={{ margin: 0 }}>Nuevo curso</h2>
+      <h2 style={{ margin: 0 }}>{editingCourse ? 'Editar curso' : 'Nuevo curso'}</h2>
       {error && <p style={{ color: '#b91c1c', margin: 0 }}>{error}</p>}
+      {success && <p style={{ color: '#166534', margin: 0 }}>{success}</p>}
       <label style={{ display: 'grid', gap: '8px' }}>
         Nombre
         <input
@@ -78,9 +111,20 @@ const CourseForm = ({ onCourseCreated }) => {
           placeholder="Descripción del curso"
         />
       </label>
-      <button style={buttonStyle} type="submit" disabled={loading}>
-        {loading ? 'Creando...' : 'Crear curso'}
-      </button>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button style={buttonStyle} type="submit" disabled={loading}>
+          {loading ? (editingCourse ? 'Actualizando...' : 'Creando...') : (editingCourse ? 'Actualizar curso' : 'Crear curso')}
+        </button>
+        {editingCourse && (
+          <button
+            style={{ ...buttonStyle, background: '#6b7280' }}
+            type="button"
+            onClick={() => onCancelEdit?.()}
+          >
+            Cancelar
+          </button>
+        )}
+      </div>
     </form>
   )
 }

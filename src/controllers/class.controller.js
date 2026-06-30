@@ -4,7 +4,7 @@ import {
   createClass,
   updateClass,
   removeClass
-} from '../models/Class.model.js';
+} from '../models/class.model.js';
 
 // Obtener todas las clases del usuario
 export async function listClassesController(req, res, next) {
