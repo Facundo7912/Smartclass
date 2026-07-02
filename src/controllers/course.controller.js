@@ -4,7 +4,7 @@ import {
   createCourse,
   updateCourse,
   removeCourse
-} from '../models/Course.model.js';
+} from '../models/course.model.js';
 
 // Obtener todos los cursos del usuario
 export async function listCoursesController(req, res, next) {
