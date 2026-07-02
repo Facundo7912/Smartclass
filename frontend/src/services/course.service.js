@@ -1,5 +1,11 @@
 import axios from 'axios'
+// En course.service.js, justo después de los imports o al principio
 
+console.log('🔍 VITE_API_URL:', import.meta.env.VITE_API_URL);
+const API_URL = import.meta.env.VITE_API_URL || '';
+console.log('🔍 API_URL:', API_URL);
+const BASE_URL = `${API_URL}/api/courses`;
+console.log('🔍 BASE_URL:', BASE_URL);
 const BASE_URL = '/api/courses'
 
 export const getAllCourses = async () => {
