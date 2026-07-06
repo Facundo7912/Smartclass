@@ -86,27 +86,27 @@ const CourseList = ({ refreshTrigger, onEdit }) => {
           {courses.map((course) => (
             <div
               key={course.id ?? course._id}
-              className="min-w-[280px] md:min-w-[320px] bg-white border border-outline-variant rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start gap-4 hover:border-primary transition-colors"
+              className="w-full bg-white border border-outline-variant rounded-xl p-5 flex flex-col justify-between items-start gap-4 hover:border-primary transition-colors"
             >
               <div className="space-y-4 flex-1 min-w-0">
                 <span className="inline-flex px-2 py-1 bg-primary-container text-white text-[10px] font-bold tracking-wider rounded uppercase">
                   {course.id ?? course._id}
                 </span>
                 <div>
-                  <p className="text-lg font-bold text-primary mb-1 truncate">{course.name}</p>
-                  <p className="text-secondary text-sm mb-4 line-clamp-3">{course.description}</p>
+                  <p className="text-lg font-bold text-primary mb-1 break-words">{course.name}</p>
+                  <p className="text-secondary text-sm mb-4 line-clamp-3 break-words">{course.description}</p>
                 </div>
               </div>
-              <div className="mt-0 flex-shrink-0 flex flex-wrap gap-2">
+              <div className="mt-4 w-full flex gap-2 flex-wrap">
                 <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm rounded-lg flex-shrink-0"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm rounded-lg"
                   type="button"
                   onClick={() => onEdit?.(course)}
                 >
                   Editar
                 </button>
                 <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm rounded-lg flex-shrink-0"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm rounded-lg"
                   type="button"
                   onClick={() => handleDelete(course)}
                 >
