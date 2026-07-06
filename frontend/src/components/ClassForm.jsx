@@ -6,6 +6,7 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
   const [date, setDate] = useState('')
   const [courseId, setCourseId] = useState('')
   const [notes, setNotes] = useState('')
+  const [fileName, setFileName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -16,11 +17,13 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
       setDate(editingClass.date || '')
       setCourseId(editingClass.courseId || '')
       setNotes(editingClass.notes || '')
+      setFileName(editingClass.fileName || '')
     } else {
       setTitle('')
       setDate('')
       setCourseId('')
       setNotes('')
+      setFileName('')
     }
   }, [editingClass])
 
@@ -34,6 +37,16 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
     return () => window.clearTimeout(timer)
   }, [success])
 
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0]
+    if (file && file.type === 'application/pdf') {
+      setFileName(file.name)
+      return
+    }
+
+    setFileName('')
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
@@ -46,19 +59,20 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
     setLoading(true)
 
     try {
-      console.log('🔍 ClassForm handleSubmit', { editingClass, title, date, courseId, notes })
+      console.log('🔍 ClassForm handleSubmit', { editingClass, title, date, courseId, notes, fileName })
 
       if (editingClass) {
         const updated = await updateClass(editingClass.id ?? editingClass._id, {
           title: title.trim(),
           date,
           courseId,
-          notes: notes.trim()
+          notes: notes.trim(),
+          fileName
         })
         console.log('🔍 updateClass result', updated)
         setSuccess('Clase actualizada correctamente.')
       } else {
-        const created = await createClass({ title: title.trim(), date, courseId, notes: notes.trim() })
+        const created = await createClass({ title: title.trim(), date, courseId, notes: notes.trim(), fileName })
         console.log('🔍 createClass result', created)
         setSuccess('Clase creada correctamente.')
       }
@@ -67,6 +81,7 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
       setDate('')
       setCourseId('')
       setNotes('')
+      setFileName('')
       onClassCreated?.()
       onCancelEdit?.()
     } catch (err) {
@@ -131,6 +146,16 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
           placeholder="Notas opcionales"
           rows={4}
         />
+      </label>
+      <label className="grid gap-2">
+        <span className="text-sm font-medium text-slate-700">Archivo PDF (opcional)</span>
+        <input
+          type="file"
+          accept=".pdf"
+          className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition file:cursor-pointer file:border-0 file:bg-slate-200 file:px-3 file:py-2 file:text-slate-900"
+          onChange={handleFileChange}
+        />
+        {fileName && <p className="text-sm text-slate-600">Archivo seleccionado: {fileName}</p>}
       </label>
       <div className="flex flex-wrap items-center gap-3">
         <button
