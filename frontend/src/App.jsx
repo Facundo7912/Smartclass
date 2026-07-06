@@ -38,11 +38,11 @@ const App = () => {
     <div className="min-h-screen bg-slate-50">
       <Header />
       <main className="mx-auto mt-[120px] max-w-[900px] px-4 pb-10 md:px-6">
-        <header className="mb-8 rounded-3xl bg-white px-6 py-6 shadow-sm md:px-8">
+        <header className="mb-8 rounded-lg bg-[#0a2a44] px-6 py-8 shadow-lg md:px-8">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">SmartClass</p>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-900">Gestión de SmartClass</h1>
-            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">Administra cursos y clases desde una interfaz profesional y moderna.</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/75">SmartClass</p>
+            <h1 className="mt-3 text-3xl font-semibold text-white">Gestión de SmartClass</h1>
+            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-300">Administra cursos y clases desde una interfaz profesional y moderna.</p>
           </div>
         </header>
 

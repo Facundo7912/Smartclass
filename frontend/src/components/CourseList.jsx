@@ -39,11 +39,16 @@ const CourseList = ({ refreshTrigger, onEdit }) => {
     setLoading(true)
 
     try {
-      await deleteCourse(course.id ?? course._id)
+      const id = course.id ?? course._id
+      console.log('🔍 CourseList handleDelete', { id, course })
+      const deletedCourse = await deleteCourse(id)
+      console.log('🔍 deleteCourse result', deletedCourse)
       setFeedback('Curso eliminado correctamente.')
       await loadCourses()
     } catch (err) {
-      setError('No se pudo eliminar el curso.')
+      console.error('🔍 CourseList delete error', err)
+      const message = err?.response?.data?.error || err?.message || 'No se pudo eliminar el curso.'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -81,27 +86,27 @@ const CourseList = ({ refreshTrigger, onEdit }) => {
           {courses.map((course) => (
             <div
               key={course.id ?? course._id}
-              className="min-w-[280px] md:min-w-[320px] bg-white border border-outline-variant rounded-xl p-5 flex flex-col justify-between hover:border-primary transition-colors"
+              className="min-w-[280px] md:min-w-[320px] bg-white border border-outline-variant rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start gap-4 hover:border-primary transition-colors"
             >
-              <div className="space-y-4 flex-1">
+              <div className="space-y-4 flex-1 min-w-0">
                 <span className="inline-flex px-2 py-1 bg-primary-container text-white text-[10px] font-bold tracking-wider rounded uppercase">
                   {course.id ?? course._id}
                 </span>
                 <div>
-                  <p className="text-lg font-bold text-primary mb-1">{course.name}</p>
-                  <p className="text-secondary text-sm mb-4">{course.description}</p>
+                  <p className="text-lg font-bold text-primary mb-1 truncate">{course.name}</p>
+                  <p className="text-secondary text-sm mb-4 line-clamp-3">{course.description}</p>
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap justify-end gap-3 flex-shrink-0">
+              <div className="mt-0 flex-shrink-0 flex flex-wrap gap-2">
                 <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex-shrink-0"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm rounded-lg flex-shrink-0"
                   type="button"
                   onClick={() => onEdit?.(course)}
                 >
                   Editar
                 </button>
                 <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex-shrink-0"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm rounded-lg flex-shrink-0"
                   type="button"
                   onClick={() => handleDelete(course)}
                 >

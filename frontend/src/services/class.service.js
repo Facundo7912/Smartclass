@@ -1,9 +1,14 @@
 import axios from 'axios'
 
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-const BASE_URL = API_URL ? `${API_URL}/api/classes` : '/api/classes'
+const isDev = import.meta.env.MODE === 'development'
 
-console.log('🔍 class.service init', { API_URL, BASE_URL })
+if (!API_URL && !isDev) {
+  throw new Error('VITE_API_URL no está definido en producción. Configura la variable en Vercel.')
+}
+
+const BASE_URL = API_URL ? `${API_URL}/api/classes` : '/api/classes'
+console.log('🔍 class.service init', { API_URL, BASE_URL, mode: import.meta.env.MODE })
 
 export const getAllClasses = async () => {
   console.log('🔍 getAllClasses ->', BASE_URL)
@@ -36,5 +41,9 @@ export const deleteClass = async (id) => {
   const url = `${BASE_URL}/${id}`
   console.log('🔍 deleteClass ->', url)
   const response = await axios.delete(url)
+  console.log('🔍 deleteClass response', response.data)
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || 'Error desconocido al eliminar la clase')
+  }
   return response.data.data
 }

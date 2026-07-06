@@ -40,14 +40,18 @@ const CourseForm = ({ onCourseCreated, editingCourse, onCancelEdit }) => {
     setLoading(true)
 
     try {
+      console.log('🔍 CourseForm handleSubmit', { editingCourse, name, description })
+
       if (editingCourse) {
-        await updateCourse(editingCourse.id ?? editingCourse._id, {
+        const updatedCourse = await updateCourse(editingCourse.id ?? editingCourse._id, {
           name: name.trim(),
           description: description.trim()
         })
+        console.log('🔍 updateCourse result', updatedCourse)
         setSuccess('Curso actualizado correctamente.')
       } else {
-        await createCourse({ name: name.trim(), description: description.trim() })
+        const createdCourse = await createCourse({ name: name.trim(), description: description.trim() })
+        console.log('🔍 createCourse result', createdCourse)
         setSuccess('Curso creado correctamente.')
       }
 
@@ -56,7 +60,9 @@ const CourseForm = ({ onCourseCreated, editingCourse, onCancelEdit }) => {
       onCourseCreated?.()
       onCancelEdit?.()
     } catch (err) {
-      setError(editingCourse ? 'No se pudo actualizar el curso.' : 'No se pudo crear el curso.')
+      console.error('🔍 CourseForm submit error', err)
+      const message = err?.response?.data?.error || err?.message || (editingCourse ? 'No se pudo actualizar el curso.' : 'No se pudo crear el curso.')
+      setError(message)
     } finally {
       setLoading(false)
     }
