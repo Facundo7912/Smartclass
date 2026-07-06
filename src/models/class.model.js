@@ -10,7 +10,7 @@ const normalizeClass = (record) => ({
 export async function getAllClasses(userId) {
   try {
     const { data, error } = await supabase
-      .from('classes')
+      .from('Classes')
       .select('*')
       .eq('user_id', userId);
 
@@ -25,7 +25,7 @@ export async function getAllClasses(userId) {
 export async function getClassById(id) {
   try {
     const { data, error } = await supabase
-      .from('classes')
+      .from('Classes')
       .select('*')
       .eq('id', id)
       .single();
@@ -53,7 +53,7 @@ export async function createClass(classData) {
     };
 
     const { data, error } = await supabase
-      .from('classes')
+      .from('Classes')
       .insert(newClass)
       .select()
       .single();
@@ -77,7 +77,7 @@ export async function updateClass(id, updates) {
     };
 
     const { data, error } = await supabase
-      .from('classes')
+      .from('Classes')
       .update(updatePayload)
       .eq('id', id)
       .select()
@@ -98,7 +98,7 @@ export async function updateClass(id, updates) {
 export async function removeClass(id) {
   try {
     const { data: existingClass, error: fetchError } = await supabase
-      .from('classes')
+      .from('Classes')
       .select('*')
       .eq('id', id)
       .single();
@@ -109,7 +109,7 @@ export async function removeClass(id) {
     }
 
     const { error: deleteError } = await supabase
-      .from('classes')
+      .from('Classes')
       .delete()
       .eq('id', id);
 
