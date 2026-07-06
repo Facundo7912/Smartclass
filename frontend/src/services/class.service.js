@@ -27,6 +27,10 @@ export const getClassById = async (id) => {
 export const createClass = async (classData) => {
   console.log('🔍 createClass ->', BASE_URL, classData)
   const response = await axios.post(BASE_URL, classData)
+  console.log('🔍 createClass response', response.data)
+  if (!response.data?.success) {
+    throw new Error(response.data?.error || 'Error desconocido al crear la clase')
+  }
   return response.data.data
 }
 

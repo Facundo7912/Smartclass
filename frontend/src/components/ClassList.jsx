@@ -132,7 +132,7 @@ const ClassList = ({ refreshTrigger, onEdit, courses = [] }) => {
       )}
 
       {!loading && !error && classes.length > 0 && (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           {classes.map((classItem) => {
             const course = Array.isArray(courses)
               ? courses.find((item) => item.id === classItem.courseId || item._id === classItem.courseId)
@@ -143,7 +143,7 @@ const ClassList = ({ refreshTrigger, onEdit, courses = [] }) => {
             return (
               <div
                 key={classItem.id ?? classItem._id}
-                className="bg-white border border-outline-variant p-4 md:p-5 rounded-lg flex flex-col gap-4 md:flex-row md:items-center md:justify-between transition-all hover:bg-surface-container-low"
+                className="w-full bg-white border border-outline-variant p-4 md:p-5 rounded-lg flex flex-col gap-4 md:flex-row md:items-center md:justify-between transition-all hover:bg-surface-container-low"
               >
                 <div className="flex items-start gap-4 min-w-0">
                   <div className="flex flex-col items-center justify-center bg-surface-container p-2 rounded w-16 flex-shrink-0">

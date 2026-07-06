@@ -46,16 +46,20 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
     setLoading(true)
 
     try {
+      console.log('🔍 ClassForm handleSubmit', { editingClass, title, date, courseId, notes })
+
       if (editingClass) {
-        await updateClass(editingClass.id ?? editingClass._id, {
+        const updated = await updateClass(editingClass.id ?? editingClass._id, {
           title: title.trim(),
           date,
           courseId,
           notes: notes.trim()
         })
+        console.log('🔍 updateClass result', updated)
         setSuccess('Clase actualizada correctamente.')
       } else {
-        await createClass({ title: title.trim(), date, courseId, notes: notes.trim() })
+        const created = await createClass({ title: title.trim(), date, courseId, notes: notes.trim() })
+        console.log('🔍 createClass result', created)
         setSuccess('Clase creada correctamente.')
       }
 
@@ -66,7 +70,9 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
       onClassCreated?.()
       onCancelEdit?.()
     } catch (err) {
-      setError(editingClass ? 'No se pudo actualizar la clase.' : 'No se pudo crear la clase.')
+      console.error('🔍 ClassForm submit error', err)
+      const message = err?.response?.data?.error || err?.message || (editingClass ? 'No se pudo actualizar la clase.' : 'No se pudo crear la clase.')
+      setError(message)
     } finally {
       setLoading(false)
     }

@@ -82,7 +82,7 @@ const CourseList = ({ refreshTrigger, onEdit }) => {
       )}
 
       {!loading && !error && courses.length > 0 && (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="flex flex-col gap-4">
           {courses.map((course) => (
             <div
               key={course.id ?? course._id}
