@@ -45,13 +45,11 @@ export async function getClassById(id) {
 export async function createClass(classData) {
   try {
     const newClass = {
-      id: `class-${Date.now()}`,
       title: classData.title,
       date: classData.date,
       course_id: classData.courseId,
       user_id: classData.userId,
-      notes: classData.notes ?? '',
-      created_at: new Date().toISOString()
+      notes: classData.notes ?? ''
     };
 
     const { data, error } = await supabase
@@ -70,9 +68,17 @@ export async function createClass(classData) {
 // Actualizar una clase
 export async function updateClass(id, updates) {
   try {
+    const updatePayload = {
+      ...(updates.title !== undefined ? { title: updates.title } : {}),
+      ...(updates.date !== undefined ? { date: updates.date } : {}),
+      ...(updates.courseId !== undefined ? { course_id: updates.courseId } : {}),
+      ...(updates.userId !== undefined ? { user_id: updates.userId } : {}),
+      ...(updates.notes !== undefined ? { notes: updates.notes } : {})
+    };
+
     const { data, error } = await supabase
       .from('Classes')
-      .update(updates)
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single();
@@ -82,7 +88,7 @@ export async function updateClass(id, updates) {
       throw error;
     }
 
-    return data ?? null;
+    return data ? normalizeClass(data) : null;
   } catch (error) {
     throw error;
   }
