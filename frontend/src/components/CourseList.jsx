@@ -83,7 +83,7 @@ const CourseList = ({ refreshTrigger, onEdit }) => {
               key={course.id ?? course._id}
               className="min-w-[280px] md:min-w-[320px] bg-white border border-outline-variant rounded-xl p-5 flex flex-col justify-between hover:border-primary transition-colors"
             >
-              <div className="space-y-4">
+              <div className="space-y-4 flex-1">
                 <span className="inline-flex px-2 py-1 bg-primary-container text-white text-[10px] font-bold tracking-wider rounded uppercase">
                   {course.id ?? course._id}
                 </span>
@@ -92,16 +92,16 @@ const CourseList = ({ refreshTrigger, onEdit }) => {
                   <p className="text-secondary text-sm mb-4">{course.description}</p>
                 </div>
               </div>
-              <div className="mt-4 flex justify-end gap-3">
+              <div className="mt-4 flex flex-wrap justify-end gap-3 flex-shrink-0">
                 <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex-shrink-0"
                   type="button"
                   onClick={() => onEdit?.(course)}
                 >
                   Editar
                 </button>
                 <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex-shrink-0"
                   type="button"
                   onClick={() => handleDelete(course)}
                 >

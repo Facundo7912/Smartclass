@@ -62,62 +62,43 @@ const CourseForm = ({ onCourseCreated, editingCourse, onCancelEdit }) => {
     }
   }
 
-  const formStyle = {
-    display: 'grid',
-    gap: '14px',
-    padding: '18px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '16px',
-    background: '#ffffff'
-  }
-
-  const inputStyle = {
-    width: '100%',
-    padding: '12px 14px',
-    borderRadius: '14px',
-    border: '1px solid #d1d5db',
-    background: '#f9fafb'
-  }
-
-  const buttonStyle = {
-    border: 'none',
-    borderRadius: '14px',
-    padding: '14px 18px',
-    background: '#4338ca',
-    color: '#ffffff',
-    cursor: loading ? 'not-allowed' : 'pointer'
-  }
-
   return (
-    <form style={formStyle} onSubmit={handleSubmit}>
-      <h2 style={{ margin: 0 }}>{editingCourse ? 'Editar curso' : 'Nuevo curso'}</h2>
-      {error && <p style={{ color: '#b91c1c', margin: 0 }}>{error}</p>}
-      {success && <p style={{ color: '#166534', margin: 0 }}>{success}</p>}
-      <label style={{ display: 'grid', gap: '8px' }}>
-        Nombre
+    <form className="grid gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8" onSubmit={handleSubmit}>
+      <div>
+        <h2 className="text-xl font-semibold text-slate-900">{editingCourse ? 'Editar curso' : 'Nuevo curso'}</h2>
+      </div>
+      {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
+      {success && <p className="text-sm font-medium text-emerald-700">{success}</p>}
+      <label className="grid gap-2">
+        <span className="text-sm font-medium text-slate-700">Nombre</span>
         <input
-          style={inputStyle}
+          className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="Nombre del curso"
         />
       </label>
-      <label style={{ display: 'grid', gap: '8px' }}>
-        Descripción
+      <label className="grid gap-2">
+        <span className="text-sm font-medium text-slate-700">Descripción</span>
         <textarea
-          style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }}
+          className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           placeholder="Descripción del curso"
+          rows={5}
         />
       </label>
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button style={buttonStyle} type="submit" disabled={loading}>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          className="inline-flex min-w-[180px] items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+          type="submit"
+          disabled={loading}
+        >
           {loading ? (editingCourse ? 'Actualizando...' : 'Creando...') : (editingCourse ? 'Actualizar curso' : 'Crear curso')}
         </button>
         {editingCourse && (
           <button
-            style={{ ...buttonStyle, background: '#6b7280' }}
+            className="inline-flex min-w-[180px] items-center justify-center rounded-2xl bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-300"
             type="button"
             onClick={() => onCancelEdit?.()}
           >

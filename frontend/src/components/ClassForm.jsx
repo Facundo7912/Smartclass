@@ -72,59 +72,35 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
     }
   }
 
-  const formStyle = {
-    display: 'grid',
-    gap: '14px',
-    padding: '18px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '16px',
-    background: '#ffffff'
-  }
-
-  const inputStyle = {
-    width: '100%',
-    padding: '12px 14px',
-    borderRadius: '14px',
-    border: '1px solid #d1d5db',
-    background: '#f9fafb'
-  }
-
-  const buttonStyle = {
-    border: 'none',
-    borderRadius: '14px',
-    padding: '14px 18px',
-    background: '#4338ca',
-    color: '#ffffff',
-    cursor: loading ? 'not-allowed' : 'pointer'
-  }
-
   return (
-    <form style={formStyle} onSubmit={handleSubmit}>
-      <h2 style={{ margin: 0 }}>{editingClass ? 'Editar clase' : 'Nueva clase'}</h2>
-      {error && <p style={{ color: '#b91c1c', margin: 0 }}>{error}</p>}
-      {success && <p style={{ color: '#166534', margin: 0 }}>{success}</p>}
-      <label style={{ display: 'grid', gap: '8px' }}>
-        Título
+    <form className="grid gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8" onSubmit={handleSubmit}>
+      <div>
+        <h2 className="text-xl font-semibold text-slate-900">{editingClass ? 'Editar clase' : 'Nueva clase'}</h2>
+      </div>
+      {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
+      {success && <p className="text-sm font-medium text-emerald-700">{success}</p>}
+      <label className="grid gap-2">
+        <span className="text-sm font-medium text-slate-700">Título</span>
         <input
-          style={inputStyle}
+          className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           placeholder="Título de la clase"
         />
       </label>
-      <label style={{ display: 'grid', gap: '8px' }}>
-        Fecha
+      <label className="grid gap-2">
+        <span className="text-sm font-medium text-slate-700">Fecha</span>
         <input
           type="date"
-          style={inputStyle}
+          className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
           value={date}
           onChange={(event) => setDate(event.target.value)}
         />
       </label>
-      <label style={{ display: 'grid', gap: '8px' }}>
-        Curso
+      <label className="grid gap-2">
+        <span className="text-sm font-medium text-slate-700">Curso</span>
         <select
-          style={inputStyle}
+          className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
           value={courseId}
           onChange={(event) => setCourseId(event.target.value)}
         >
@@ -140,22 +116,27 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
           )}
         </select>
       </label>
-      <label style={{ display: 'grid', gap: '8px' }}>
-        Notas
+      <label className="grid gap-2">
+        <span className="text-sm font-medium text-slate-700">Notas</span>
         <textarea
-          style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }}
+          className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           placeholder="Notas opcionales"
+          rows={4}
         />
       </label>
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button style={buttonStyle} type="submit" disabled={loading}>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          className="inline-flex min-w-[180px] items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+          type="submit"
+          disabled={loading}
+        >
           {loading ? (editingClass ? 'Actualizando...' : 'Creando...') : (editingClass ? 'Actualizar clase' : 'Crear clase')}
         </button>
         {editingClass && (
           <button
-            style={{ ...buttonStyle, background: '#6b7280' }}
+            className="inline-flex min-w-[180px] items-center justify-center rounded-2xl bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-300"
             type="button"
             onClick={() => onCancelEdit?.()}
           >

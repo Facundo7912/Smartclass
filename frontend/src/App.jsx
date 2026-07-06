@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import CourseForm from './components/CourseForm.jsx'
 import CourseList from './components/CourseList.jsx'
 import ClassForm from './components/ClassForm.jsx'
 import ClassList from './components/ClassList.jsx'
+import Header from './components/Header.jsx'
 import { getAllCourses } from './services/course.service.js'
 import './App.css'
 
@@ -34,19 +35,16 @@ const App = () => {
   }, [refreshCourses])
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <header className="hero">
-        <div>
-          <p className="eyebrow">SmartClass</p>
-          <h1>Gestión de SmartClass</h1>
-          <p className="subtitle">Administra cursos y clases desde una interfaz simple.</p>
-        </div>
-      </header>
-
-      <nav style={{ display: 'flex', gap: '12px', margin: '20px 0' }}>
-        <Link to="/cursos">Cursos</Link>
-        <Link to="/clases">Clases</Link>
-      </nav>
+    <div className="min-h-screen bg-slate-50">
+      <Header />
+      <main className="mx-auto mt-[120px] max-w-[900px] px-4 pb-10 md:px-6">
+        <header className="mb-8 rounded-3xl bg-white px-6 py-6 shadow-sm md:px-8">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">SmartClass</p>
+            <h1 className="mt-3 text-3xl font-semibold text-slate-900">Gestión de SmartClass</h1>
+            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">Administra cursos y clases desde una interfaz profesional y moderna.</p>
+          </div>
+        </header>
 
       <Routes>
         <Route
@@ -56,9 +54,11 @@ const App = () => {
         <Route
           path="/cursos"
           element={
-            <section>
-              <h2 style={{ marginBottom: '16px' }}>Gestión de Cursos</h2>
-              <div style={{ display: 'grid', gap: '20px' }}>
+            <section className="space-y-8">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-900">Gestión de Cursos</h2>
+              </div>
+              <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
                 <CourseForm onCourseCreated={handleCourseCreated} />
                 <CourseList refreshTrigger={refreshCourses} />
               </div>
@@ -68,9 +68,11 @@ const App = () => {
         <Route
           path="/clases"
           element={
-            <section>
-              <h2 style={{ marginBottom: '16px' }}>Gestión de Clases</h2>
-              <div style={{ display: 'grid', gap: '20px' }}>
+            <section className="space-y-8">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-900">Gestión de Clases</h2>
+              </div>
+              <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
                 <ClassForm onClassCreated={handleClassCreated} courses={courses} />
                 <ClassList refreshTrigger={refreshClasses} courses={courses} />
               </div>
@@ -78,8 +80,9 @@ const App = () => {
           }
         />
       </Routes>
-    </div>
-  )
+    </main>
+  </div>
+)
 }
 
 export default App
