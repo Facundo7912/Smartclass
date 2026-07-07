@@ -37,9 +37,7 @@ export async function getClassController(req, res, next) {
 export async function createClassController(req, res, next) {
   try {
     const userId = req.userId;
-    const { title, date, courseId, notes, fileName } = req.body;
-
-    console.log('🧠 createClassController body', req.body);
+    const { title, date, courseId, notes } = req.body;
     
     if (!title || !date || !courseId) {
       return res.status(400).json({
@@ -53,11 +51,9 @@ export async function createClassController(req, res, next) {
       date,
       courseId,
       userId,
-      notes: notes || '',
-      fileName: fileName || ''
+      notes: notes || ''
     });
     
-    console.log('🧠 createClassController result', classData);
     res.status(201).json({ success: true, data: classData });
   } catch (error) {
     next(error);
