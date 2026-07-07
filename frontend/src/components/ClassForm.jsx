@@ -51,7 +51,8 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
     event.preventDefault()
     setError('')
 
-    if (!title.trim() || !date || !courseId) {
+    const titleTrim = title.trim()
+    if (!titleTrim || !date || !courseId) {
       setError('Completa título, fecha y curso.')
       return
     }
@@ -59,11 +60,11 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
     setLoading(true)
 
     try {
-      console.log('🔍 ClassForm handleSubmit', { editingClass, title, date, courseId, notes, fileName })
+      console.log('🔍 ClassForm handleSubmit', { editingClass, title: titleTrim, date, courseId, notes, fileName })
 
       if (editingClass) {
         const updated = await updateClass(editingClass.id ?? editingClass._id, {
-          title: title.trim(),
+          title: titleTrim,
           date,
           courseId,
           notes: notes.trim(),
@@ -72,7 +73,7 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
         console.log('🔍 updateClass result', updated)
         setSuccess('Clase actualizada correctamente.')
       } else {
-        const created = await createClass({ title: title.trim(), date, courseId, notes: notes.trim(), fileName })
+        const created = await createClass({ title: titleTrim, date, courseId, notes: notes.trim(), fileName })
         console.log('🔍 createClass result', created)
         setSuccess('Clase creada correctamente.')
       }
@@ -103,9 +104,17 @@ const ClassForm = ({ onClassCreated, editingClass, onCancelEdit, courses = [] })
       <label className="grid gap-2">
         <span className="text-sm font-medium text-slate-700">Título</span>
         <input
+          name="title"
           className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
           value={title}
-          onChange={(event) => setTitle(event.target.value)}
+          onChange={(event) => {
+            const v = event.target.value
+            setTitle(v)
+            if (error) setError('')
+          }}
+          onBlur={() => {
+            if (!title.trim()) setError('Completa título, fecha y curso.')
+          }}
           placeholder="Título de la clase"
         />
       </label>

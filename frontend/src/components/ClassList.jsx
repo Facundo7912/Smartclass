@@ -156,6 +156,12 @@ const ClassList = ({ refreshTrigger, onEdit, courses = [] }) => {
                       <span className="material-symbols-outlined text-xs">school</span>
                       <span>{courseName}</span>
                     </p>
+                    { (classItem.fileName || classItem.file_name) ? (
+                      <p className="mt-2 text-sm text-slate-600 flex items-center gap-2">
+                        <span>📄</span>
+                        <span className="truncate">{classItem.fileName || classItem.file_name}</span>
+                      </p>
+                    ) : null }
                     <div className={`mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${statusInfo.classes}`}>
                       <span className="w-1.5 h-1.5 rounded-full bg-current" />
                       {statusInfo.label}
