@@ -3,7 +3,8 @@ import { supabase } from '../supabase.js';
 const normalizeClass = (record) => ({
   ...record,
   courseId: record.course_id ?? record.courseId,
-  userId: record.user_id ?? record.userId
+  userId: record.user_id ?? record.userId,
+  fileName: record.file_name ?? record.fileName ?? ''
 });
 
 // Obtener todas las clases de un usuario
@@ -49,8 +50,11 @@ export async function createClass(classData) {
       date: classData.date,
       course_id: classData.courseId,
       user_id: classData.userId,
-      notes: classData.notes ?? ''
+      notes: classData.notes ?? '',
+      file_name: classData.fileName ?? ''
     };
+
+    console.log('🧠 createClass model payload', newClass);
 
     const { data, error } = await supabase
       .from('Classes')
@@ -73,7 +77,8 @@ export async function updateClass(id, updates) {
       ...(updates.date !== undefined ? { date: updates.date } : {}),
       ...(updates.courseId !== undefined ? { course_id: updates.courseId } : {}),
       ...(updates.userId !== undefined ? { user_id: updates.userId } : {}),
-      ...(updates.notes !== undefined ? { notes: updates.notes } : {})
+      ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
+      ...(updates.fileName !== undefined ? { file_name: updates.fileName } : {})
     };
 
     const { data, error } = await supabase
