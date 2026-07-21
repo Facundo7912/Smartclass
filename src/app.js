@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import indexRoutes from './routes/index.routes.js';
 import courseRoutes from './routes/course.routes.js';
 import classRoutes from './routes/class.routes.js';
+import aiRoutes from './routes/ai.routes.js';
 // Cargar variables de entorno
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use((req, res, next) => {
 app.use('/api', indexRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/classes', classRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/', (req, res) => {
   res.json({
