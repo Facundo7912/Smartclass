@@ -5,6 +5,7 @@ import CourseList from './components/CourseList.jsx'
 import ClassForm from './components/ClassForm.jsx'
 import ClassList from './components/ClassList.jsx'
 import Header from './components/Header.jsx'
+import AIProcessor from './components/AIProcessor.jsx'
 import { getAllCourses } from './services/course.service.js'
 import './App.css'
 
@@ -76,6 +77,18 @@ const App = () => {
                 <ClassForm onClassCreated={handleClassCreated} courses={courses} />
                 <ClassList refreshTrigger={refreshClasses} courses={courses} />
               </div>
+            </section>
+          }
+        />
+        <Route
+          path="/procesar"
+          element={
+            <section className="space-y-8">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-900">Procesar con IA</h2>
+                <p className="text-slate-600">Sube un archivo PDF o DOCX para generar resúmenes, tarjetas de estudio o guiones para presentaciones.</p>
+              </div>
+              <AIProcessor />
             </section>
           }
         />
