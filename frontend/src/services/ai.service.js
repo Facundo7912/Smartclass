@@ -1,9 +1,14 @@
 // Construcción de la URL del API
 const getApiUrl = () => {
-  // En producción, usa VITE_API_URL desde .env.production
-  // En desarrollo, usa la ruta relativa (que será redirigida por el proxy de Vite)
   const baseUrl = import.meta.env.VITE_API_URL || '/api';
-  return `${baseUrl.replace(/\/$/, '')}/ai/process`; // Elimina trailing slash si existe
+  
+  // Si baseUrl es una URL completa (comienza con http/https), agregar /api/ai/process
+  if (baseUrl.startsWith('http')) {
+    return `${baseUrl.replace(/\/$/, '')}/api/ai/process`;
+  }
+  
+  // Si baseUrl es una ruta relativa (para desarrollo con proxy de Vite), agregar /ai/process
+  return `${baseUrl.replace(/\/$/, '')}/ai/process`;
 };
 
 const API_URL = getApiUrl();
