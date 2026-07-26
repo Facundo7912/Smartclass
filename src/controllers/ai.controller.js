@@ -1,6 +1,7 @@
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import { model } from '../gemini.js';
+import { generatePPT } from '../services/ppt.service.js';
 
 const getPromptByAction = (action, text) => {
   switch (action) {
@@ -25,6 +26,67 @@ export const generateWithGemini = async (text, action) => {
   const response = await result.response;
 
   return response.text();
+};
+
+/**
+ * Parsea la respuesta de Gemini para el caso PPT
+ * Estructura el texto en diapositivas con título y contenido
+ * @param {string} geminText - Respuesta de Gemini con el guión de la presentación
+ * @returns {Object} Objeto con title y slides
+ */
+const parsePPTResponse = (geminText) => {
+  const lines = geminText.split('\n').filter(line => line.trim());
+  const slides = [];
+  let currentSlide = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Detectar títulos de diapositivas (líneas que comienzan con "Diapositiva", números, o patrones similares)
+    if (
+      /^(diapositiva|slide|diap|\\d+\\.|\\*\\*diapositiva|^#{1,2}\\s)/.test(trimmed.toLowerCase()) ||
+      (trimmed.endsWith(':') && !trimmed.startsWith('-') && !trimmed.startsWith('•'))
+    ) {
+      // Guardar diapositiva anterior si existe
+      if (currentSlide) {
+        slides.push(currentSlide);
+      }
+
+      // Crear nueva diapositiva
+      currentSlide = {
+        title: trimmed
+          .replace(/^(diapositiva|slide|diap|\\d+\\.?|\\*\\*diapositiva|#+\\s)/i, '')
+          .replace(/[:\\*]/g, '')
+          .trim(),
+        content: [],
+      };
+    } else if (currentSlide && (trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.startsWith('*'))) {
+      // Línea de contenido (viñeta)
+      const content = trimmed.replace(/^[-•*]\\s*/, '').trim();
+      if (content) {
+        currentSlide.content.push(content);
+      }
+    } else if (currentSlide && trimmed && !trimmed.startsWith('#')) {
+      // Línea de contenido sin viñeta
+      if (currentSlide.content.length === 0) {
+        // Si no hay viñetas aún, agregar como primer punto
+        currentSlide.content.push(trimmed);
+      }
+    }
+  }
+
+  // Guardar última diapositiva
+  if (currentSlide) {
+    slides.push(currentSlide);
+  }
+
+  // Filtrar diapositivas válidas (con título y al menos un punto de contenido)
+  const validSlides = slides.filter(slide => slide.title && slide.content.length > 0);
+
+  return {
+    title: 'Presentación Generada - SmartClass',
+    slides: validSlides.length > 0 ? validSlides : slides,
+  };
 };
 
 export const processFileController = async (req, res) => {
@@ -82,6 +144,37 @@ export const processFileController = async (req, res) => {
 
     console.log(`🤖 [Backend] Generando contenido con Gemini (acción: ${action})...`);
     const result = await generateWithGemini(finalText, action);
+
+    // ========== CASO ESPECIAL: Generar PowerPoint ==========
+    if (action === 'ppt') {
+      try {
+        console.log('📊 [Backend] Parseando respuesta de Gemini para PPT...');
+        const pptData = parsePPTResponse(result);
+
+        console.log(`📋 [Backend] Estructura de PPT:`, {
+          slides: pptData.slides.length,
+          titles: pptData.slides.map(s => s.title),
+        });
+
+        console.log('🎬 [Backend] Generando archivo PowerPoint...');
+        const pptBuffer = await generatePPT(pptData);
+
+        console.log(`✅ [Backend] PowerPoint generado (${pptBuffer.length} bytes)`);
+
+        // Devolver archivo como descarga
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+        res.setHeader('Content-Disposition', 'attachment; filename="presentacion_smartclass.pptx"');
+        res.setHeader('Content-Length', pptBuffer.length);
+
+        return res.send(pptBuffer);
+      } catch (pptError) {
+        console.error('❌ [Backend] Error generando PowerPoint:', pptError);
+        return res.status(500).json({
+          error: 'Error al generar el archivo PowerPoint',
+          details: pptError.message,
+        });
+      }
+    }
 
     console.log(`✅ [Backend] Respuesta generada exitosamente (${result.length} caracteres)`);
     return res.json({ success: true, result });
