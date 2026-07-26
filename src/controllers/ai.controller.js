@@ -29,40 +29,67 @@ export const generateWithGemini = async (text, action) => {
 
 export const processFileController = async (req, res) => {
   try {
+    // Logs de la petición recibida
+    console.log('\n📨 [Backend] Petición POST /api/ai/process recibida');
+    console.log('📋 [Backend] Método HTTP:', req.method);
+    console.log('📋 [Backend] Headers:', {
+      contentType: req.headers['content-type'],
+      contentLength: req.headers['content-length'],
+    });
+    console.log('📦 [Backend] Body fields:', Object.keys(req.body));
+    console.log('📎 [Backend] Multer file info:', req.file ? {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      encoding: req.file.encoding,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+    } : 'No file uploaded');
+
     const { action, text } = req.body;
 
     let finalText = text?.trim() || '';
 
     if (req.file) {
+      console.log(`📄 [Backend] Procesando archivo: ${req.file.originalname}`);
       const { buffer, originalname } = req.file;
       const extension = originalname.toLowerCase().slice(originalname.lastIndexOf('.'));
 
       if (extension === '.pdf') {
+        console.log('📖 [Backend] Parseando PDF...');
         const data = await pdfParse(buffer);
         finalText = data.text;
+        console.log(`✅ [Backend] PDF parseado: ${finalText.length} caracteres extraídos`);
       } else if (extension === '.docx') {
+        console.log('📝 [Backend] Parseando DOCX...');
         const data = await mammoth.extractRawText({ buffer });
         finalText = data.value;
+        console.log(`✅ [Backend] DOCX parseado: ${finalText.length} caracteres extraídos`);
       } else {
+        console.warn(`⚠️ [Backend] Formato no soportado: ${extension}`);
         return res.status(400).json({ error: 'Formato de archivo no soportado.' });
       }
     }
 
     if (!finalText) {
+      console.warn('⚠️ [Backend] Sin contenido para procesar (archivo y texto vacío)');
       return res.status(400).json({ error: 'Debes enviar un archivo o texto para procesar.' });
     }
 
     if (!action) {
+      console.warn('⚠️ [Backend] Acción no especificada');
       return res.status(400).json({ error: 'La acción es obligatoria.' });
     }
 
+    console.log(`🤖 [Backend] Generando contenido con Gemini (acción: ${action})...`);
     const result = await generateWithGemini(finalText, action);
 
+    console.log(`✅ [Backend] Respuesta generada exitosamente (${result.length} caracteres)`);
     return res.json({ success: true, result });
   } catch (error) {
-    console.error('Error en processFileController:', error);
+    console.error('❌ [Backend] Error en processFileController:', error);
     return res.status(500).json({
       error: error.message || 'Ocurrió un error al procesar el archivo.',
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
 };

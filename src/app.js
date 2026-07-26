@@ -23,6 +23,13 @@ app.use(express.urlencoded({ extended: true }));
 // Logging de peticiones
 app.use((req, res, next) => {
   console.log(`📝 ${req.method} ${req.url}`);
+  // Log adicional para peticiones a /api/ai
+  if (req.url.includes('/api/ai')) {
+    console.log(`🔍 [Middleware] Detalles de petición a ${req.url}:`, {
+      method: req.method,
+      contentType: req.headers['content-type'],
+    });
+  }
   next();
 });
 
