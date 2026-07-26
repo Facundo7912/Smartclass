@@ -148,13 +148,26 @@ export const processFileController = async (req, res) => {
     // ========== CASO ESPECIAL: Generar PowerPoint ==========
     if (action === 'ppt') {
       try {
+        console.log('\n📄 [Backend] ========== RESPUESTA COMPLETA DE GEMINI ==========');
+        console.log(result);
+        console.log('========== FIN DE RESPUESTA ==========\n');
+
         console.log('📊 [Backend] Parseando respuesta de Gemini para PPT...');
         const pptData = parsePPTResponse(result);
 
-        console.log(`📋 [Backend] Estructura de PPT:`, {
-          slides: pptData.slides.length,
-          titles: pptData.slides.map(s => s.title),
+        console.log(`\n📋 [Backend] ========== ESTRUCTURA DE PPT PARSEADA ==========`);
+        console.log('Título:', pptData.title);
+        console.log('Total de diapositivas:', pptData.slides.length);
+        
+        pptData.slides.forEach((slide, index) => {
+          console.log(`\n  Diapositiva ${index + 1}:`);
+          console.log(`    Título: "${slide.title}"`);
+          console.log(`    Contenido (${slide.content.length} puntos):`);
+          slide.content.forEach((point, i) => {
+            console.log(`      ${i + 1}. ${point}`);
+          });
         });
+        console.log('\n========== FIN DE ESTRUCTURA ==========\n');
 
         console.log('🎬 [Backend] Generando archivo PowerPoint...');
         const pptBuffer = await generatePPT(pptData);

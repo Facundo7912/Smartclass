@@ -29,11 +29,11 @@ const Header = () => {
           >
             Clases
           </NavLink>
-                    // Dentro de la barra de navegación, agrega:
+                    
           <NavLink to="/procesar" className={({ isActive }) => 
             `text-sm font-medium transition-colors ${isActive ? 'text-blue-700' : 'text-slate-600 hover:text-blue-600'}`
           }>
-            Procesar con IA
+            IA
           </NavLink>
         </nav>
       </div>

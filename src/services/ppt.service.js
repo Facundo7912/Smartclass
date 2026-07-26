@@ -154,7 +154,12 @@ export const generatePPT = async (pptData) => {
     });
 
     // Generar y devolver como Buffer
-    const buffer = await prs.write({ outputType: 'buffer' });
+    // ❌ ANTES (causa el error en Linux)
+    const buffer = await pptx.write({ outputType: 'buffer' });
+
+    // ✅ DESPUÉS (funciona en cualquier plataforma)
+    const base64 = await pptx.write({ outputType: 'base64' });
+    const buffer = Buffer.from(base64, 'base64');
     return buffer;
   } catch (error) {
     console.error('❌ [PPT Service] Error generando PowerPoint:', error);
