@@ -154,8 +154,6 @@ export const generatePPT = async (pptData) => {
     });
 
     // Generar y devolver como Buffer
-    // ❌ ANTES (causa el error en Linux)
-    const buffer = await pptx.write({ outputType: 'buffer' });
 
     // ✅ DESPUÉS (funciona en cualquier plataforma)
     const base64 = await pptx.write({ outputType: 'base64' });
