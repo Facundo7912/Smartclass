@@ -1,9 +1,10 @@
-// frontend/src/components/AIProcessor.jsx
 import { useState } from 'react';
 import { processFile } from '../services/ai.service';
 import Flashcard from './Flashcard';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-// ========== COMPONENTE DE CARGA ==========
+// ========== LOADING INDICATOR ==========
 const LoadingIndicator = ({ status }) => {
   if (!status.isProcessing && !status.isComplete && !status.isError) return null;
 
@@ -103,7 +104,6 @@ const AIProcessor = () => {
 
       // ========== CASO FLASHCARDS ==========
       if (action === 'flashcards') {
-        // 🔥 PRIORIDAD 1: Si el backend devuelve 'flashcards' (array)
         if (response.flashcards && Array.isArray(response.flashcards) && response.flashcards.length > 0) {
           setResult({
             type: 'flashcards',
@@ -120,7 +120,6 @@ const AIProcessor = () => {
           return;
         }
 
-        // 🔥 PRIORIDAD 2: Si hay 'raw' (texto plano), lo mostramos como fallback
         if (response.raw) {
           setResult({
             type: 'text',
@@ -137,7 +136,6 @@ const AIProcessor = () => {
           return;
         }
 
-        // 🔥 PRIORIDAD 3: Si solo hay 'result', lo mostramos como texto plano
         if (response.result) {
           setResult({
             type: 'text',
@@ -154,7 +152,6 @@ const AIProcessor = () => {
           return;
         }
 
-        // Si nada funciona, error
         setError('No se recibió contenido válido para las tarjetas.');
         setStatus({
           message: 'Error: sin contenido',
@@ -222,8 +219,12 @@ const AIProcessor = () => {
           {flashcards.map((card, index) => (
             <Flashcard
               key={index}
-              question={card.question || `Pregunta ${index + 1}`}
-              answer={card.answer || 'Sin respuesta'}
+              question={
+                <ReactMarkdown>{card.question || `Pregunta ${index + 1}`}</ReactMarkdown>
+              }
+              answer={
+                <ReactMarkdown>{card.answer || 'Sin respuesta'}</ReactMarkdown>
+              }
             />
           ))}
         </div>
@@ -240,8 +241,12 @@ const AIProcessor = () => {
         <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3 mb-4">
           <span className="text-3xl">📝</span> Resumen
         </h2>
-        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm whitespace-pre-wrap">
-          {result.data}
+        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm prose prose-slate max-w-none">
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+          >
+            {result.data}
+          </ReactMarkdown>
         </div>
       </div>
     );
