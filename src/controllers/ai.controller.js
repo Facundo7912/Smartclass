@@ -8,7 +8,7 @@ const getPromptByAction = (action, text) => {
     case 'summary':
       return `Resume el siguiente texto de manera clara y concisa. El resumen debe tener entre 5 y 8 párrafos.\n\nTexto:\n${text}`;
     case 'flashcards':
-      return `A partir del siguiente texto, genera 5 tarjetas de estudio en formato 'Pregunta - Respuesta'.\n\nTexto:\n${text}`;
+      return `A partir del siguiente texto, genera exactamente 4 tarjetas de estudio en formato:\nPregunta: [pregunta]\nRespuesta: [respuesta]\n\nRepite este formato para cada tarjeta separadas por línea en blanco.\n\nTexto:\n${text}`;
     case 'ppt':
       return `A partir del siguiente texto, genera un guión para una presentación de 5 diapositivas. Cada diapositiva debe tener un título y 3-4 puntos clave.\n\nTexto:\n${text}`;
     default:
@@ -86,6 +86,67 @@ const parsePPTResponse = (geminText) => {
   return {
     title: 'Presentación Generada - SmartClass',
     slides: validSlides.length > 0 ? validSlides : slides,
+  };
+};
+
+/**
+ * Parsea la respuesta de Gemini para el caso Flashcards
+ * Estructura el texto en tarjetas de estudio con pregunta y respuesta
+ * @param {string} geminText - Respuesta de Gemini con las tarjetas
+ * @returns {Object} Objeto con array de flashcards
+ */
+const parseFlashcardsResponse = (geminText) => {
+  const flashcards = [];
+  
+  // Dividir por líneas en blanco para separar tarjetas
+  const sections = geminText.split(/\n\s*\n/);
+  
+  for (const section of sections) {
+    if (!section.trim()) continue;
+    
+    const lines = section.split('\n').map(line => line.trim()).filter(line => line);
+    let question = '';
+    let answer = '';
+    let inQuestion = false;
+    let inAnswer = false;
+    
+    for (const line of lines) {
+      // Detectar línea de pregunta (comienza con "Pregunta:")
+      if (line.toLowerCase().startsWith('pregunta:')) {
+        inQuestion = true;
+        inAnswer = false;
+        question = line.replace(/^pregunta:\s*/i, '').trim();
+      }
+      // Detectar línea de respuesta (comienza con "Respuesta:")
+      else if (line.toLowerCase().startsWith('respuesta:')) {
+        inAnswer = true;
+        inQuestion = false;
+        answer = line.replace(/^respuesta:\s*/i, '').trim();
+      }
+      // Continuar con pregunta multi-línea
+      else if (inQuestion && !line.toLowerCase().startsWith('respuesta:')) {
+        if (question) question += ' ';
+        question += line;
+      }
+      // Continuar con respuesta multi-línea
+      else if (inAnswer) {
+        if (answer) answer += ' ';
+        answer += line;
+      }
+    }
+    
+    // Agregar tarjeta si tiene pregunta y respuesta
+    if (question && answer) {
+      flashcards.push({
+        question: question,
+        answer: answer,
+      });
+    }
+  }
+  
+  return {
+    flashcards: flashcards,
+    count: flashcards.length,
   };
 };
 
@@ -185,6 +246,48 @@ export const processFileController = async (req, res) => {
         return res.status(500).json({
           error: 'Error al generar el archivo PowerPoint',
           details: pptError.message,
+        });
+      }
+    }
+
+    // ========== CASO ESPECIAL: Generar Flashcards ==========
+    if (action === 'flashcards') {
+      try {
+        console.log('\n📚 [Backend] ========== RESPUESTA COMPLETA DE GEMINI (FLASHCARDS) ==========');
+        console.log(result);
+        console.log('========== FIN DE RESPUESTA ==========\n');
+
+        console.log('📚 [Backend] Parseando respuesta de Gemini para Flashcards...');
+        const flashcardsData = parseFlashcardsResponse(result);
+
+        console.log(`\n📋 [Backend] ========== ESTRUCTURA DE FLASHCARDS PARSEADA ==========`);
+        console.log(`Total de tarjetas: ${flashcardsData.count}`);
+        
+        flashcardsData.flashcards.forEach((card, index) => {
+          console.log(`\n  Tarjeta ${index + 1}:`);
+          console.log(`    Pregunta: "${card.question}"`);
+          console.log(`    Respuesta: "${card.answer}"`);
+        });
+        console.log('\n========== FIN DE ESTRUCTURA ==========\n');
+
+        if (flashcardsData.flashcards.length === 0) {
+          console.warn('⚠️ [Backend] No se extrajeron tarjetas de la respuesta de Gemini');
+          return res.status(400).json({
+            error: 'No se pudieron extraer tarjetas de estudio del contenido.',
+          });
+        }
+
+        console.log(`✅ [Backend] Flashcards generadas exitosamente (${flashcardsData.flashcards.length} tarjetas)`);
+        return res.json({
+          success: true,
+          flashcards: flashcardsData.flashcards,
+          count: flashcardsData.count,
+        });
+      } catch (flashcardError) {
+        console.error('❌ [Backend] Error generando Flashcards:', flashcardError);
+        return res.status(500).json({
+          error: 'Error al generar las tarjetas de estudio',
+          details: flashcardError.message,
         });
       }
     }

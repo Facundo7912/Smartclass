@@ -1,51 +1,40 @@
 import { useState } from 'react';
 import { processFile } from '../services/ai.service';
+import Flashcard from './Flashcard';
 
-/**
- * Componente de indicador de carga con estados
- */
 const LoadingIndicator = ({ status }) => {
-  if (!status.isProcessing && !status.isComplete && !status.isError) {
-    return null;
-  }
+  if (!status.isProcessing && !status.isComplete && !status.isError) return null;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 text-sm font-medium">
       <span className="text-xl">{status.emoji}</span>
-      
       {status.isProcessing && (
-        <>
-          <svg
-            className="h-5 w-5 animate-spin text-blue-600"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          <span className="text-sm font-medium text-blue-600">{status.message}</span>
-        </>
+        <svg
+          className="animate-spin h-4 w-4 text-blue-600"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
       )}
-
-      {status.isComplete && (
-        <span className="text-sm font-medium text-emerald-600">{status.message}</span>
-      )}
-
-      {status.isError && (
-        <span className="text-sm font-medium text-red-600">{status.message}</span>
-      )}
+      {status.isComplete && <span className="text-green-600">✔️</span>}
+      {status.isError && <span className="text-red-600">❌</span>}
+      <span className={`${status.isError ? 'text-red-600' : status.isComplete ? 'text-green-600' : 'text-blue-600'}`}>
+        {status.message}
+      </span>
     </div>
   );
 };
@@ -55,245 +44,206 @@ const AIProcessor = () => {
   const [text, setText] = useState('');
   const [action, setAction] = useState('summary');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState('');
+  const [result, setResult] = useState(null);
   const [error, setError] = useState('');
-  const [pptFile, setPptFile] = useState(null);
   const [status, setStatus] = useState({
     message: '',
     emoji: '',
     isProcessing: false,
     isComplete: false,
-    isError: false,
+    isError: false
   });
 
-  const handleFileChange = async (selectedFile) => {
-    if (!selectedFile) return;
-
-    setFile(selectedFile);
-    setError('');
-
-    const extension = selectedFile.name.split('.').pop()?.toLowerCase();
-
-    if (extension === 'txt' || extension === 'md') {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setText(event.target.result || '');
-      };
-      reader.readAsText(selectedFile);
-    } else {
-      setText('');
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
-    setResult('');
-    setPptFile(null);
+    setResult(null);
+    setLoading(true);
 
-    // ========== ESTADO: Iniciando procesamiento ==========
     setStatus({
       message: 'Procesando con IA...',
       emoji: '🤔',
       isProcessing: true,
       isComplete: false,
-      isError: false,
+      isError: false
     });
 
     try {
       const formData = new FormData();
-
       if (file) {
         formData.append('file', file);
-      }
-
-      if (text.trim()) {
+      } else if (text) {
         formData.append('text', text);
+      } else {
+        setError('Por favor, sube un archivo o pega un texto.');
+        setStatus({
+          message: 'Error: falta archivo o texto',
+          emoji: '😅',
+          isProcessing: false,
+          isComplete: false,
+          isError: true
+        });
+        setLoading(false);
+        return;
       }
+      formData.append('action', action);
 
       const response = await processFile(formData, action);
+      console.log('📦 Respuesta de la IA:', response);
 
-      // Detectar si es un archivo PPT
-      if (response.isFile && response.blob) {
-        console.log('📊 [Frontend] Archivo PPT recibido');
-        setPptFile({
-          blob: response.blob,
-          fileName: response.fileName,
-        });
-        setResult(`✨ Presentación generada exitosamente (${(response.blob.size / 1024).toFixed(2)} KB)`);
-      } else {
-        setResult(response.result || 'Procesamiento completado.');
-      }
-
-      // ========== ESTADO: Procesamiento completado ==========
       setStatus({
         message: '¡Procesado con éxito!',
         emoji: '😎',
         isProcessing: false,
         isComplete: true,
-        isError: false,
+        isError: false
       });
 
-      // Auto-ocultar el indicador después de 3 segundos
-      setTimeout(() => {
-        setStatus({
-          message: '',
-          emoji: '',
-          isProcessing: false,
-          isComplete: false,
-          isError: false,
-        });
-      }, 3000);
+      setResult(response);
     } catch (err) {
       console.error('❌ Error:', err);
-      setError(err.message || 'No se pudo procesar la solicitud.');
-
-      // ========== ESTADO: Error ==========
       setStatus({
         message: 'Error al procesar',
         emoji: '😅',
         isProcessing: false,
         isComplete: false,
-        isError: true,
+        isError: true
       });
-
-      // Auto-ocultar el indicador después de 3 segundos
-      setTimeout(() => {
-        setStatus({
-          message: '',
-          emoji: '',
-          isProcessing: false,
-          isComplete: false,
-          isError: false,
-        });
-      }, 3000);
+      setError(err.message || 'Error al procesar el archivo.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownloadPPT = () => {
-    if (!pptFile) return;
+  // Renderizar flashcards
+  const renderFlashcards = () => {
+    if (action !== 'flashcards') return null;
+    if (!result || !result.flashcards) return null;
 
-    const url = URL.createObjectURL(pptFile.blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = pptFile.fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    console.log('✅ [Frontend] Descarga de PPT iniciada');
+    return (
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3 mb-6">
+          <span className="text-3xl">📚</span> Tarjetas de estudio
+          <span className="text-sm font-normal text-slate-500">
+            ({result.flashcards.length} tarjetas)
+          </span>
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {result.flashcards.map((card, index) => (
+            <Flashcard
+              key={index}
+              question={card.question}
+              answer={card.answer}
+            />
+          ))}
+        </div>
+      </div>
+    );
   };
 
-  const actions = [
-    { value: 'summary', label: 'Resumen' },
-    { value: 'flashcards', label: 'Tarjetas de estudio' },
-    { value: 'ppt', label: 'PPT' },
-  ];
+  // Renderizar resumen
+  const renderSummary = () => {
+    if (action !== 'summary') return null;
+    if (!result) return null;
+
+    return (
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3 mb-4">
+          <span className="text-3xl">📝</span> Resumen
+        </h2>
+        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm whitespace-pre-wrap">
+          {typeof result === 'string' ? result : result.summary || JSON.stringify(result, null, 2)}
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-slate-800">Procesador de IA</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Sube un archivo PDF o DOCX, o pega texto directamente para generar contenido con Gemini.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-          <input
-            id="file-upload"
-            type="file"
-            accept=".pdf,.docx,.txt,.md"
-            onChange={(e) => handleFileChange(e.target.files?.[0])}
-            className="hidden"
-          />
-          <label
-            htmlFor="file-upload"
-            className="cursor-pointer rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
-          >
-            Elegir archivo
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6 text-slate-800">🧠 Procesar con IA</h1>
+      
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            📄 Subir archivo (PDF o DOCX)
           </label>
-          <p className="mt-3 text-sm text-slate-500">
-            {file ? `Archivo seleccionado: ${file.name}` : 'Arrastra o selecciona un PDF, DOCX, TXT o MD'}
-          </p>
+          <input
+            type="file"
+            accept=".pdf,.docx"
+            onChange={handleFileChange}
+            className="w-full p-2 border border-slate-300 rounded-lg text-sm"
+          />
+          {file && <p className="text-sm text-slate-600 mt-1">📎 {file.name}</p>}
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-700">Texto manual</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            ✏️ O pega texto manualmente
+          </label>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            rows={8}
-            placeholder="Pega aquí el texto si no quieres subir un archivo..."
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none ring-0 focus:border-slate-500"
+            className="w-full p-3 border border-slate-300 rounded-lg h-32 text-sm resize-y"
+            placeholder="Pega tu texto aquí..."
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-slate-700">Tipo de salida</label>
-          <div className="flex flex-wrap gap-3">
-            {actions.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setAction(item.value)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  action === item.value
-                    ? 'bg-slate-800 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            🎯 Tipo de salida
+          </label>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                value="summary"
+                checked={action === 'summary'}
+                onChange={(e) => setAction(e.target.value)}
+                className="accent-blue-600"
+              />
+              Resumen
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                value="flashcards"
+                checked={action === 'flashcards'}
+                onChange={(e) => setAction(e.target.value)}
+                className="accent-blue-600"
+              />
+              Tarjetas de estudio
+            </label>
+            
           </div>
         </div>
 
-        {/* Botón y indicador de carga en la misma línea */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 pt-2">
           <button
             type="submit"
-            disabled={loading || (!file && !text.trim())}
-            className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            disabled={loading}
+            className="flex-1 bg-blue-600 text-white py-2.5 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
           >
-            {loading ? 'Procesando...' : 'Procesar con IA'}
+            {loading ? '⏳ Procesando...' : '🚀 Procesar con IA'}
           </button>
-
-          {/* Indicador de carga */}
           <LoadingIndicator status={status} />
         </div>
       </form>
 
       {error && (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          ❌ {error}
         </div>
       )}
 
-      {result && (
-        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            {pptFile ? '📊 Presentación Generada' : 'Resultado'}
-          </h3>
-          <div className="whitespace-pre-wrap text-sm leading-7 text-slate-700">{result}</div>
-
-          {/* Botón de descarga para PPT */}
-          {pptFile && (
-            <button
-              onClick={handleDownloadPPT}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-            >
-              <span>📥</span>
-              <span>Descargar PPT</span>
-            </button>
-          )}
-        </div>
-      )}
+      {renderSummary()}
+      {renderFlashcards()}
     </div>
   );
 };
