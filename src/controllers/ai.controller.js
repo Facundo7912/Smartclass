@@ -1,3 +1,4 @@
+// backend/src/controllers/ai.controller.js
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -39,9 +40,8 @@ async function callGeminiWithRetry(prompt, maxRetries = 3) {
       console.warn(`❌ Intento ${i + 1} falló:`, error.message);
       lastError = error;
       
-      // Si es un error de saturación (503), esperar antes de reintentar
       if (error.message.includes('503') || error.message.includes('Unavailable') || error.message.includes('high demand')) {
-        const waitTime = (i + 1) * 2000; // 2s, 4s, 6s
+        const waitTime = (i + 1) * 2000;
         console.log(`⏳ Esperando ${waitTime/1000} segundos antes de reintentar...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
@@ -52,13 +52,20 @@ async function callGeminiWithRetry(prompt, maxRetries = 3) {
   throw new Error(`Error al generar contenido con Gemini: ${lastError?.message || 'Modelo no disponible'}`);
 }
 
-// ========== PROMPTS ==========
+// ========== PROMPTS MEJORADOS ==========
 const getPromptByAction = (action, text) => {
   switch (action) {
     case 'summary':
-      return `Resume el siguiente texto de manera clara y concisa. El resumen debe tener entre 5 y 8 párrafos.\n\nTexto:\n${text}`;
+      // 🔥 PROMPT CORREGIDO: Obliga a Gemini a resumir sin copiar el texto original
+      return `Eres un asistente que genera resúmenes académicos. A partir del siguiente texto, genera un RESUMEN ESTRUCTURADO Y CONCISO. No copies el texto original. Extrae las ideas principales, los conceptos clave y las conclusiones en un texto continuo de entre 200 y 300 palabras. El resumen debe tener un título, una introducción y un cierre.\n\nTexto a resumir:\n${text}`;
     case 'flashcards':
-      return `A partir del siguiente texto, genera exactamente 4 tarjetas de estudio en formato:\nPregunta: [pregunta]\nRespuesta: [respuesta]\n\nRepite este formato para cada tarjeta separadas por línea en blanco.\n\nTexto:\n${text}`;
+      return `A partir del siguiente texto, genera 4 tarjetas de estudio. El formato debe ser siempre:
+Pregunta: [escribe aquí la pregunta sobre un concepto clave]
+Respuesta: [escribe aquí la respuesta concisa y directa]
+
+Debes generar EXACTAMENTE 4 tarjetas, numeradas del 1 al 4. Asegúrate de que las preguntas sean relevantes y las respuestas claras.
+
+Texto:\n${text}`;
     case 'ppt':
       return `A partir del siguiente texto, genera un guión para una presentación de 5 diapositivas. Cada diapositiva debe tener un título y 3-4 puntos clave.\n\nTexto:\n${text}`;
     default:
@@ -85,56 +92,33 @@ export const generateWithGemini = async (text, action) => {
 // ========== PARSEAR RESPUESTA DE FLASHCARDS ==========
 const parseFlashcardsResponse = (geminText) => {
   const flashcards = [];
+  const lines = geminText.split('\n').filter(line => line.trim());
+  let currentQuestion = '';
+  let currentAnswer = '';
+  let isAnswer = false;
   
-  // Dividir por líneas en blanco para separar tarjetas
-  const sections = geminText.split(/\n\s*\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.match(/^(Pregunta|Question|Q)\s*(\d+)?\s*[:.]/i)) {
+      if (currentQuestion && currentAnswer) {
+        flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
+        currentQuestion = '';
+        currentAnswer = '';
+      }
+      currentQuestion = line.replace(/^(Pregunta|Question|Q)\s*(\d+)?\s*[:.]\s*/i, '').trim();
+      isAnswer = false;
+    } else if (line.match(/^(Respuesta|Answer|R)\s*(\d+)?\s*[:.]/i)) {
+      currentAnswer = line.replace(/^(Respuesta|Answer|R)\s*(\d+)?\s*[:.]\s*/i, '').trim();
+      isAnswer = true;
+    } else if (isAnswer && currentAnswer) {
+      currentAnswer += ' ' + line;
+    } else if (!isAnswer && currentQuestion) {
+      currentQuestion += ' ' + line;
+    }
+  }
   
-  for (const section of sections) {
-    if (!section.trim()) continue;
-    
-    const lines = section.split('\n').map(line => line.trim()).filter(line => line);
-    let question = '';
-    let answer = '';
-    let inQuestion = false;
-    let inAnswer = false;
-    
-    for (const line of lines) {
-      // Detectar línea de pregunta (comienza con "Pregunta:")
-      if (line.toLowerCase().startsWith('pregunta:')) {
-        if (question && answer) {
-          flashcards.push({ question: question.trim(), answer: answer.trim() });
-          question = '';
-          answer = '';
-        }
-        inQuestion = true;
-        inAnswer = false;
-        question = line.replace(/^pregunta:\s*/i, '').trim();
-      }
-      // Detectar línea de respuesta (comienza con "Respuesta:")
-      else if (line.toLowerCase().startsWith('respuesta:')) {
-        inAnswer = true;
-        inQuestion = false;
-        answer = line.replace(/^respuesta:\s*/i, '').trim();
-      }
-      // Continuar con pregunta multi-línea
-      else if (inQuestion && !line.toLowerCase().startsWith('respuesta:')) {
-        if (question) question += ' ';
-        question += line;
-      }
-      // Continuar con respuesta multi-línea
-      else if (inAnswer) {
-        if (answer) answer += ' ';
-        answer += line;
-      }
-    }
-    
-    // Agregar tarjeta si tiene pregunta y respuesta
-    if (question && answer) {
-      flashcards.push({
-        question: question.trim(),
-        answer: answer.trim(),
-      });
-    }
+  if (currentQuestion && currentAnswer) {
+    flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
   }
   
   return {
@@ -152,7 +136,6 @@ const parsePPTResponse = (geminText) => {
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // Detectar títulos de diapositivas
     if (
       /^(diapositiva|slide|diap|\d+\.|\*\*diapositiva|^#{1,2}\s)/.test(trimmed.toLowerCase()) ||
       (trimmed.endsWith(':') && !trimmed.startsWith('-') && !trimmed.startsWith('•'))
@@ -196,7 +179,6 @@ const parsePPTResponse = (geminText) => {
 export const processFileController = async (req, res) => {
   try {
     console.log('\n📨 [Backend] Petición POST /api/ai/process recibida');
-    console.log('📋 [Backend] Método HTTP:', req.method);
     console.log('📎 [Backend] Multer file info:', req.file ? {
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
@@ -280,6 +262,8 @@ export const processFileController = async (req, res) => {
           success: true,
           flashcards: flashcardsData.flashcards,
           count: flashcardsData.count,
+          // 🔥 NUEVO: Enviamos también el texto plano como fallback por si el frontend no puede parsear
+          raw: result
         });
       } catch (flashcardError) {
         console.error('❌ [Backend] Error generando Flashcards:', flashcardError);

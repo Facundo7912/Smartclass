@@ -1,7 +1,9 @@
+// frontend/src/components/AIProcessor.jsx
 import { useState } from 'react';
 import { processFile } from '../services/ai.service';
 import Flashcard from './Flashcard';
 
+// ========== COMPONENTE DE CARGA ==========
 const LoadingIndicator = ({ status }) => {
   if (!status.isProcessing && !status.isComplete && !status.isError) return null;
 
@@ -39,6 +41,7 @@ const LoadingIndicator = ({ status }) => {
   );
 };
 
+// ========== COMPONENTE PRINCIPAL ==========
 const AIProcessor = () => {
   const [file, setFile] = useState(null);
   const [text, setText] = useState('');
@@ -98,171 +101,77 @@ const AIProcessor = () => {
       const response = await processFile(formData, action);
       console.log('📦 Respuesta de la IA:', response);
 
-      // ✅ CORRECCIÓN: Procesar la respuesta
-      if (response.isFile) {
-        // Es un archivo (PPT)
-        setStatus({
-          message: '¡PPT generado con éxito!',
-          emoji: '😎',
-          isProcessing: false,
-          isComplete: true,
-          isError: false
-        });
-        const url = URL.createObjectURL(response.blob);
-        setResult({
-          type: 'file',
-          downloadUrl: url,
-          fileName: response.fileName
-        });
-        setLoading(false);
-        return;
-      }
-
-      // ========== PROCESAMIENTO DE RESPUESTAS DE TEXTO ==========
-      const textResponse = response.result || response;
-      
-      // Si es flashcards
+      // ========== CASO FLASHCARDS ==========
       if (action === 'flashcards') {
-        console.log('🎴 Procesando flashcards con texto:', typeof textResponse);
-        
-        // Intentar parsear como JSON
-        try {
-          const parsed = typeof textResponse === 'string' ? JSON.parse(textResponse) : textResponse;
-          if (parsed.flashcards && Array.isArray(parsed.flashcards)) {
-            setResult({
-              type: 'flashcards',
-              data: parsed.flashcards
-            });
-            setStatus({
-              message: '¡Procesado con éxito!',
-              emoji: '😎',
-              isProcessing: false,
-              isComplete: true,
-              isError: false
-            });
-            setLoading(false);
-            return;
-          }
-          if (Array.isArray(parsed)) {
-            setResult({
-              type: 'flashcards',
-              data: parsed
-            });
-            setStatus({
-              message: '¡Procesado con éxito!',
-              emoji: '😎',
-              isProcessing: false,
-              isComplete: true,
-              isError: false
-            });
-            setLoading(false);
-            return;
-          }
-        } catch (e) {
-          console.log('No es JSON válido, procesando como texto plano');
-        }
-
-        // Si no es JSON, extraer flashcards del texto
-        const text = typeof textResponse === 'string' ? textResponse : JSON.stringify(textResponse);
-        const flashcards = [];
-
-        // Buscar patrones de pregunta/respuesta
-        const lines = text.split('\n').filter(line => line.trim());
-        let currentQuestion = '';
-        let currentAnswer = '';
-        let isCollectingAnswer = false;
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
-          
-          // Detectar pregunta
-          if (line.match(/^(Pregunta|Q|Question)\s*[:.]/i)) {
-            if (currentQuestion && currentAnswer) {
-              flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
-              currentQuestion = '';
-              currentAnswer = '';
-            }
-            currentQuestion = line.replace(/^(Pregunta|Q|Question)\s*[:.]\s*/i, '');
-            isCollectingAnswer = false;
-          }
-          // Detectar respuesta
-          else if (line.match(/^(Respuesta|A|Answer)\s*[:.]/i)) {
-            currentAnswer = line.replace(/^(Respuesta|A|Answer)\s*[:.]\s*/i, '');
-            isCollectingAnswer = true;
-          }
-          // Si estamos recolectando respuesta, agregar líneas
-          else if (isCollectingAnswer && currentAnswer) {
-            currentAnswer += ' ' + line;
-          }
-          // Si no hay marcadores pero estamos en una pregunta
-          else if (currentQuestion && !currentAnswer && line) {
-            currentQuestion += ' ' + line;
-          }
-        }
-
-        // Guardar la última tarjeta
-        if (currentQuestion && currentAnswer) {
-          flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
-        }
-
-        // Si no se encontraron tarjetas, buscar formato numerado
-        if (flashcards.length === 0) {
-          const questionRegex = /(\d+)[.)]\s*([^?]+[?])/g;
-          const answerRegex = /(\d+)[.)]\s*([^?]+)(?:\n|$)/g;
-          const tempQuestions = {};
-          const tempAnswers = {};
-          let match;
-
-          while ((match = questionRegex.exec(text)) !== null) {
-            tempQuestions[match[1]] = match[2].trim();
-          }
-          while ((match = answerRegex.exec(text)) !== null) {
-            tempAnswers[match[1]] = match[2].trim();
-          }
-
-          const keys = Object.keys(tempQuestions);
-          for (const key of keys) {
-            if (tempQuestions[key] && tempAnswers[key]) {
-              flashcards.push({ question: tempQuestions[key], answer: tempAnswers[key] });
-            }
-          }
-        }
-
-        // Si hay tarjetas, mostrarlas
-        if (flashcards.length > 0) {
+        // 🔥 PRIORIDAD 1: Si el backend devuelve 'flashcards' (array)
+        if (response.flashcards && Array.isArray(response.flashcards) && response.flashcards.length > 0) {
           setResult({
             type: 'flashcards',
-            data: flashcards.slice(0, 6)
+            data: response.flashcards
           });
           setStatus({
-            message: '¡Procesado con éxito!',
+            message: `¡${response.flashcards.length} tarjetas generadas!`,
             emoji: '😎',
             isProcessing: false,
             isComplete: true,
             isError: false
           });
-        } else {
-          // Si no se encontraron tarjetas, mostrar el texto plano
+          setLoading(false);
+          return;
+        }
+
+        // 🔥 PRIORIDAD 2: Si hay 'raw' (texto plano), lo mostramos como fallback
+        if (response.raw) {
           setResult({
             type: 'text',
-            data: text
+            data: response.raw
           });
           setStatus({
-            message: '¡Procesado con éxito!',
-            emoji: '😎',
+            message: 'Contenido generado (sin tarjetas detectadas)',
+            emoji: '📝',
             isProcessing: false,
             isComplete: true,
             isError: false
           });
+          setLoading(false);
+          return;
         }
+
+        // 🔥 PRIORIDAD 3: Si solo hay 'result', lo mostramos como texto plano
+        if (response.result) {
+          setResult({
+            type: 'text',
+            data: response.result
+          });
+          setStatus({
+            message: 'Contenido generado',
+            emoji: '📝',
+            isProcessing: false,
+            isComplete: true,
+            isError: false
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Si nada funciona, error
+        setError('No se recibió contenido válido para las tarjetas.');
+        setStatus({
+          message: 'Error: sin contenido',
+          emoji: '😅',
+          isProcessing: false,
+          isComplete: false,
+          isError: true
+        });
         setLoading(false);
         return;
       }
 
-      // ========== RESUMEN (TEXTO) ==========
+      // ========== CASO RESUMEN ==========
+      const textContent = response.result || response;
       setResult({
         type: 'text',
-        data: typeof textResponse === 'string' ? textResponse : JSON.stringify(textResponse, null, 2)
+        data: typeof textContent === 'string' ? textContent : JSON.stringify(textContent, null, 2)
       });
       setStatus({
         message: '¡Procesado con éxito!',
@@ -287,7 +196,6 @@ const AIProcessor = () => {
   };
 
   // ========== RENDERIZAR RESULTADOS ==========
-
   const renderFlashcards = () => {
     if (action !== 'flashcards') return null;
     if (!result || result.type !== 'flashcards') return null;
@@ -314,8 +222,8 @@ const AIProcessor = () => {
           {flashcards.map((card, index) => (
             <Flashcard
               key={index}
-              question={card.question || card.pregunta || `Pregunta ${index + 1}`}
-              answer={card.answer || card.respuesta || 'Sin respuesta'}
+              question={card.question || `Pregunta ${index + 1}`}
+              answer={card.answer || 'Sin respuesta'}
             />
           ))}
         </div>
@@ -334,29 +242,6 @@ const AIProcessor = () => {
         </h2>
         <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm whitespace-pre-wrap">
           {result.data}
-        </div>
-      </div>
-    );
-  };
-
-  const renderPPT = () => {
-    if (action !== 'ppt') return null;
-    if (!result || result.type !== 'file') return null;
-
-    return (
-      <div className="mt-8 p-6 bg-green-50 border border-green-200 rounded-xl">
-        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3 mb-4">
-          <span className="text-3xl">📊</span> PowerPoint generado
-        </h2>
-        <div className="flex flex-wrap items-center gap-4">
-          <span className="text-sm text-slate-700">📄 {result.fileName}</span>
-          <a
-            href={result.downloadUrl}
-            download={result.fileName}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
-          >
-            ⬇️ Descargar PPT
-          </a>
         </div>
       </div>
     );
@@ -450,7 +335,6 @@ const AIProcessor = () => {
 
       {renderSummary()}
       {renderFlashcards()}
-      {renderPPT()}
     </div>
   );
 };
