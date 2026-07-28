@@ -48,22 +48,24 @@ const getPromptByAction = (action, text) => {
     case 'summary':
       return `Eres un asistente que genera resúmenes académicos. A partir del siguiente texto, genera un RESUMEN ESTRUCTURADO Y CONCISO. No copies el texto original. Extrae las ideas principales, los conceptos clave y las conclusiones en un texto continuo de entre 200 y 300 palabras.\n\nTexto a resumir:\n${text}`;
     case 'flashcards':
-      // ✅ PROMPT MEJORADO PARA GEMINI
-      return `A partir del siguiente texto, genera EXACTAMENTE 4 tarjetas de estudio. El formato debe ser EXACTAMENTE el siguiente, sin nada más:
+      // ✅ PROMPT MUY ESTRICTO Y CLARO
+      return `Genera EXACTAMENTE 4 tarjetas de estudio basadas en el siguiente texto. Las tarjetas deben ser preguntas y respuestas sobre los conceptos más importantes.
 
-Pregunta 1: [escribe aquí la pregunta sobre un concepto clave del texto]
-Respuesta 1: [escribe aquí la respuesta concisa y directa]
+DEBES USAR EL SIGUIENTE FORMATO EXACTO:
 
-Pregunta 2: [escribe aquí la pregunta sobre un concepto clave del texto]
-Respuesta 2: [escribe aquí la respuesta concisa y directa]
+Pregunta 1: [escribe la pregunta sobre un concepto clave del texto]
+Respuesta 1: [escribe la respuesta concisa]
 
-Pregunta 3: [escribe aquí la pregunta sobre un concepto clave del texto]
-Respuesta 3: [escribe aquí la respuesta concisa y directa]
+Pregunta 2: [escribe la pregunta sobre un concepto clave del texto]
+Respuesta 2: [escribe la respuesta concisa]
 
-Pregunta 4: [escribe aquí la pregunta sobre un concepto clave del texto]
-Respuesta 4: [escribe aquí la respuesta concisa y directa]
+Pregunta 3: [escribe la pregunta sobre un concepto clave del texto]
+Respuesta 3: [escribe la respuesta concisa]
 
-NO agregues introducción, ni conclusión, ni nada más. Solo las 4 tarjetas en el formato indicado.
+Pregunta 4: [escribe la pregunta sobre un concepto clave del texto]
+Respuesta 4: [escribe la respuesta concisa]
+
+NO escribas nada más que estas 4 tarjetas. NO incluyas introducción, NO incluyas conclusión, NO incluyas títulos ni secciones. SOLO las tarjetas en el formato exacto indicado.
 
 Texto:\n${text}`;
     case 'ppt':
@@ -73,14 +75,14 @@ Texto:\n${text}`;
   }
 };
 
-// ========== PARSEAR FLASHCARDS ==========
+// ========== PARSEAR FLASHCARDS MEJORADO ==========
 const parseFlashcardsResponse = (geminiText) => {
   console.log('📚 [parseFlashcardsResponse] Iniciando parseo...');
   console.log('📚 [parseFlashcardsResponse] Texto a parsear (primeros 200 caracteres):', geminiText.substring(0, 200));
   
   const flashcards = [];
   
-  // 🔥 Buscar patrones "Pregunta X:" y "Respuesta X:"
+  // 🔥 INTENTO 1: Buscar "Pregunta X:" y "Respuesta X:"
   const lines = geminiText.split('\n').filter(line => line.trim());
   let currentQuestion = '';
   let currentAnswer = '';
@@ -116,6 +118,83 @@ const parseFlashcardsResponse = (geminiText) => {
   
   if (currentQuestion && currentAnswer) {
     flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
+  }
+  
+  // 🔥 INTENTO 2: Si no se encontraron tarjetas, buscar patrones "¿...?" y "R:"
+  if (flashcards.length === 0) {
+    console.log('📚 [parseFlashcardsResponse] No se encontraron tarjetas con formato "Pregunta X:", buscando otros patrones...');
+    
+    // Buscar preguntas con signos de interrogación y respuestas
+    const sections = geminiText.split(/\n\s*\n/);
+    let tempQuestion = '';
+    let tempAnswer = '';
+    
+    for (const section of sections) {
+      const lines2 = section.split('\n').filter(line => line.trim());
+      let hasQuestion = false;
+      let questionText = '';
+      let answerText = '';
+      
+      for (const line of lines2) {
+        const trimmed = line.trim();
+        // Si la línea tiene un signo de interrogación y no es muy larga
+        if (trimmed.includes('?') && trimmed.length < 100 && !trimmed.startsWith('¿')) {
+          if (hasQuestion && questionText && answerText) {
+            flashcards.push({ question: questionText.trim(), answer: answerText.trim() });
+            questionText = '';
+            answerText = '';
+          }
+          questionText = trimmed;
+          hasQuestion = true;
+          answerText = '';
+        } else if (hasQuestion && !trimmed.includes('?') && !trimmed.startsWith('-') && !trimmed.startsWith('*')) {
+          if (!answerText) {
+            answerText = trimmed;
+          } else {
+            answerText += ' ' + trimmed;
+          }
+        }
+      }
+      
+      if (questionText && answerText) {
+        flashcards.push({ question: questionText.trim(), answer: answerText.trim() });
+      }
+    }
+  }
+  
+  // 🔥 INTENTO 3: Si aún no hay tarjetas, buscar patrones "P: " y "R: "
+  if (flashcards.length === 0) {
+    console.log('📚 [parseFlashcardsResponse] Buscando patrones "P:" y "R:"...');
+    const lines3 = geminiText.split('\n').filter(line => line.trim());
+    let q = '';
+    let a = '';
+    let isQ = false;
+    let isA = false;
+    
+    for (const line of lines3) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('P:')) {
+        if (q && a) {
+          flashcards.push({ question: q.trim(), answer: a.trim() });
+          q = '';
+          a = '';
+        }
+        q = trimmed.replace(/^P:\s*/i, '').trim();
+        isQ = true;
+        isA = false;
+      } else if (trimmed.startsWith('R:')) {
+        a = trimmed.replace(/^R:\s*/i, '').trim();
+        isA = true;
+        isQ = false;
+      } else if (isQ && !isA && q) {
+        q += ' ' + trimmed;
+      } else if (isA && a) {
+        a += ' ' + trimmed;
+      }
+    }
+    if (q && a) {
+      flashcards.push({ question: q.trim(), answer: a.trim() });
+    }
   }
   
   console.log(`📚 [parseFlashcardsResponse] ${flashcards.length} tarjetas extraídas`);
