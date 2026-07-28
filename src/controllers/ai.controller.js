@@ -1,4 +1,3 @@
-// backend/src/controllers/ai.controller.js
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -13,7 +12,7 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// ========== FUNCIÓN DE REINTENTO CON MÚLTIPLES MODELOS ==========
+// ========== FUNCIÓN DE REINTENTO ==========
 async function callGeminiWithRetry(prompt, maxRetries = 3) {
   let lastError = null;
   const modelsToTry = [
@@ -25,45 +24,39 @@ async function callGeminiWithRetry(prompt, maxRetries = 3) {
   for (let i = 0; i < modelsToTry.length && i < maxRetries; i++) {
     try {
       console.log(`🔄 Intento ${i + 1}: Usando ${modelsToTry[i].label}`);
-      
       const tempModel = genAI.getGenerativeModel({ model: modelsToTry[i].model });
       const result = await tempModel.generateContent(prompt);
       const response = await result.response;
-      
       console.log(`✅ Éxito con ${modelsToTry[i].label}`);
-      return {
-        success: true,
-        text: response.text(),
-        modelUsed: modelsToTry[i].model
-      };
+      return { success: true, text: response.text(), modelUsed: modelsToTry[i].model };
     } catch (error) {
       console.warn(`❌ Intento ${i + 1} falló:`, error.message);
       lastError = error;
-      
       if (error.message.includes('503') || error.message.includes('Unavailable') || error.message.includes('high demand')) {
         const waitTime = (i + 1) * 2000;
-        console.log(`⏳ Esperando ${waitTime/1000} segundos antes de reintentar...`);
+        console.log(`⏳ Esperando ${waitTime/1000} segundos...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
   }
-
-  console.error('❌ Todos los intentos fallaron');
   throw new Error(`Error al generar contenido con Gemini: ${lastError?.message || 'Modelo no disponible'}`);
 }
 
-// ========== PROMPTS MEJORADOS ==========
+// ========== PROMPTS ==========
 const getPromptByAction = (action, text) => {
   switch (action) {
     case 'summary':
-      // 🔥 PROMPT CORREGIDO: Obliga a Gemini a resumir sin copiar el texto original
-      return `Eres un asistente que genera resúmenes académicos. A partir del siguiente texto, genera un RESUMEN ESTRUCTURADO Y CONCISO. No copies el texto original. Extrae las ideas principales, los conceptos clave y las conclusiones en un texto continuo de entre 200 y 300 palabras. El resumen debe tener un título, una introducción y un cierre.\n\nTexto a resumir:\n${text}`;
+      return `Eres un asistente que genera resúmenes académicos. A partir del siguiente texto, genera un RESUMEN ESTRUCTURADO Y CONCISO. No copies el texto original. Extrae las ideas principales, los conceptos clave y las conclusiones en un texto continuo de entre 200 y 300 palabras.\n\nTexto a resumir:\n${text}`;
     case 'flashcards':
-      return `A partir del siguiente texto, genera 4 tarjetas de estudio. El formato debe ser siempre:
-Pregunta: [escribe aquí la pregunta sobre un concepto clave]
+      return `A partir del siguiente texto, genera EXACTAMENTE 4 tarjetas de estudio. El formato debe ser EXACTAMENTE:
+
+Pregunta: [escribe aquí la pregunta sobre un concepto clave del texto]
 Respuesta: [escribe aquí la respuesta concisa y directa]
 
-Debes generar EXACTAMENTE 4 tarjetas, numeradas del 1 al 4. Asegúrate de que las preguntas sean relevantes y las respuestas claras.
+Pregunta: [segunda pregunta]
+Respuesta: [segunda respuesta]
+
+(Repite el formato para las 4 tarjetas. Las preguntas deben ser relevantes y las respuestas claras. Usa el formato literal "Pregunta:" y "Respuesta:" para cada tarjeta.)
 
 Texto:\n${text}`;
     case 'ppt':
@@ -73,42 +66,26 @@ Texto:\n${text}`;
   }
 };
 
-// ========== GENERAR CON GEMINI (CON REINTENTO) ==========
-export const generateWithGemini = async (text, action) => {
-  if (!text || !text.trim()) {
-    throw new Error('No hay texto para procesar.');
-  }
-
-  const prompt = getPromptByAction(action, text);
-  console.log(`📝 [Backend] Prompt generado (${prompt.length} caracteres)`);
-  
-  // ✅ USAR REINTENTO
-  const result = await callGeminiWithRetry(prompt);
-  console.log(`✅ [Backend] Respuesta generada con ${result.modelUsed}`);
-  
-  return result.text;
-};
-
-// ========== PARSEAR RESPUESTA DE FLASHCARDS ==========
-const parseFlashcardsResponse = (geminText) => {
+// ========== PARSEAR FLASHCARDS ==========
+const parseFlashcardsResponse = (geminiText) => {
   const flashcards = [];
-  const lines = geminText.split('\n').filter(line => line.trim());
+  const lines = geminiText.split('\n').filter(line => line.trim());
   let currentQuestion = '';
   let currentAnswer = '';
   let isAnswer = false;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (line.match(/^(Pregunta|Question|Q)\s*(\d+)?\s*[:.]/i)) {
+    if (line.toLowerCase().startsWith('pregunta:')) {
       if (currentQuestion && currentAnswer) {
         flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
         currentQuestion = '';
         currentAnswer = '';
       }
-      currentQuestion = line.replace(/^(Pregunta|Question|Q)\s*(\d+)?\s*[:.]\s*/i, '').trim();
+      currentQuestion = line.replace(/^pregunta:\s*/i, '').trim();
       isAnswer = false;
-    } else if (line.match(/^(Respuesta|Answer|R)\s*(\d+)?\s*[:.]/i)) {
-      currentAnswer = line.replace(/^(Respuesta|Answer|R)\s*(\d+)?\s*[:.]\s*/i, '').trim();
+    } else if (line.toLowerCase().startsWith('respuesta:')) {
+      currentAnswer = line.replace(/^respuesta:\s*/i, '').trim();
       isAnswer = true;
     } else if (isAnswer && currentAnswer) {
       currentAnswer += ' ' + line;
@@ -121,86 +98,58 @@ const parseFlashcardsResponse = (geminText) => {
     flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
   }
   
-  return {
-    flashcards: flashcards,
-    count: flashcards.length,
-  };
+  return { flashcards, count: flashcards.length };
 };
 
-// ========== PARSEAR RESPUESTA DE PPT ==========
-const parsePPTResponse = (geminText) => {
-  const lines = geminText.split('\n').filter(line => line.trim());
+// ========== PARSEAR PPT ==========
+const parsePPTResponse = (geminiText) => {
+  const lines = geminiText.split('\n').filter(line => line.trim());
   const slides = [];
   let currentSlide = null;
-
   for (const line of lines) {
     const trimmed = line.trim();
-
-    if (
-      /^(diapositiva|slide|diap|\d+\.|\*\*diapositiva|^#{1,2}\s)/.test(trimmed.toLowerCase()) ||
-      (trimmed.endsWith(':') && !trimmed.startsWith('-') && !trimmed.startsWith('•'))
-    ) {
-      if (currentSlide) {
-        slides.push(currentSlide);
-      }
-
-      currentSlide = {
-        title: trimmed
-          .replace(/^(diapositiva|slide|diap|\d+\.?|\*\*diapositiva|#+\s)/i, '')
-          .replace(/[:\*]/g, '')
-          .trim(),
-        content: [],
-      };
+    if (/^(diapositiva|slide|diap|\d+\.|\*\*diapositiva|^#{1,2}\s)/.test(trimmed.toLowerCase()) || (trimmed.endsWith(':') && !trimmed.startsWith('-') && !trimmed.startsWith('•'))) {
+      if (currentSlide) slides.push(currentSlide);
+      currentSlide = { title: trimmed.replace(/^(diapositiva|slide|diap|\d+\.?|\*\*diapositiva|#+\s)/i, '').replace(/[:\*]/g, '').trim(), content: [] };
     } else if (currentSlide && (trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.startsWith('*'))) {
       const content = trimmed.replace(/^[-•*]\s*/, '').trim();
-      if (content) {
-        currentSlide.content.push(content);
-      }
+      if (content) currentSlide.content.push(content);
     } else if (currentSlide && trimmed && !trimmed.startsWith('#')) {
-      if (currentSlide.content.length === 0) {
-        currentSlide.content.push(trimmed);
-      }
+      if (currentSlide.content.length === 0) currentSlide.content.push(trimmed);
     }
   }
-
-  if (currentSlide) {
-    slides.push(currentSlide);
-  }
-
+  if (currentSlide) slides.push(currentSlide);
   const validSlides = slides.filter(slide => slide.title && slide.content.length > 0);
+  return { title: 'Presentación Generada - SmartClass', slides: validSlides.length > 0 ? validSlides : slides };
+};
 
-  return {
-    title: 'Presentación Generada - SmartClass',
-    slides: validSlides.length > 0 ? validSlides : slides,
-  };
+// ========== GENERAR CON GEMINI ==========
+export const generateWithGemini = async (text, action) => {
+  if (!text || !text.trim()) throw new Error('No hay texto para procesar.');
+  const prompt = getPromptByAction(action, text);
+  console.log(`📝 [Backend] Prompt generado (${prompt.length} caracteres)`);
+  const result = await callGeminiWithRetry(prompt);
+  console.log(`✅ [Backend] Respuesta generada con ${result.modelUsed}`);
+  return result.text;
 };
 
 // ========== CONTROLADOR PRINCIPAL ==========
 export const processFileController = async (req, res) => {
   try {
-    console.log('\n📨 [Backend] Petición POST /api/ai/process recibida');
-    console.log('📎 [Backend] Multer file info:', req.file ? {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-    } : 'No file uploaded');
+    console.log('\n📨 [Backend] Petición POST /api/ai/process');
+    console.log('📎 [Backend] Archivo:', req.file ? req.file.originalname : 'No file');
 
     const { action, text } = req.body;
-
     let finalText = text?.trim() || '';
 
     if (req.file) {
-      console.log(`📄 [Backend] Procesando archivo: ${req.file.originalname}`);
       const { buffer, originalname } = req.file;
       const extension = originalname.toLowerCase().slice(originalname.lastIndexOf('.'));
-
       if (extension === '.pdf') {
-        console.log('📖 [Backend] Parseando PDF...');
         const data = await pdfParse(buffer);
         finalText = data.text;
         console.log(`✅ [Backend] PDF parseado: ${finalText.length} caracteres`);
       } else if (extension === '.docx') {
-        console.log('📝 [Backend] Parseando DOCX...');
         const data = await mammoth.extractRawText({ buffer });
         finalText = data.value;
         console.log(`✅ [Backend] DOCX parseado: ${finalText.length} caracteres`);
@@ -209,79 +158,65 @@ export const processFileController = async (req, res) => {
       }
     }
 
-    if (!finalText) {
-      return res.status(400).json({ error: 'Debes enviar un archivo o texto para procesar.' });
-    }
+    if (!finalText) return res.status(400).json({ error: 'Debes enviar un archivo o texto.' });
+    if (!action) return res.status(400).json({ error: 'La acción es obligatoria.' });
 
-    if (!action) {
-      return res.status(400).json({ error: 'La acción es obligatoria.' });
-    }
-
-    console.log(`🤖 [Backend] Generando contenido con Gemini (acción: ${action})...`);
     const result = await generateWithGemini(finalText, action);
 
     // ========== CASO PPT ==========
     if (action === 'ppt') {
       try {
-        console.log('📊 [Backend] Parseando respuesta de Gemini para PPT...');
         const pptData = parsePPTResponse(result);
-        console.log(`📊 [Backend] ${pptData.slides.length} diapositivas parseadas`);
-
-        console.log('🎬 [Backend] Generando archivo PowerPoint...');
         const pptBuffer = await generatePPT(pptData);
-
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
         res.setHeader('Content-Disposition', 'attachment; filename="presentacion_smartclass.pptx"');
         res.setHeader('Content-Length', pptBuffer.length);
-
         return res.send(pptBuffer);
-      } catch (pptError) {
-        console.error('❌ [Backend] Error generando PowerPoint:', pptError);
-        return res.status(500).json({
-          error: 'Error al generar el archivo PowerPoint',
-          details: pptError.message,
-        });
+      } catch (error) {
+        console.error('❌ [Backend] Error generando PowerPoint:', error);
+        return res.status(500).json({ error: 'Error al generar el PowerPoint', details: error.message });
       }
     }
 
     // ========== CASO FLASHCARDS ==========
     if (action === 'flashcards') {
       try {
-        console.log('📚 [Backend] Parseando respuesta de Gemini para Flashcards...');
+        console.log('📚 [Backend] Parseando flashcards...');
         const flashcardsData = parseFlashcardsResponse(result);
-
+        console.log(`📚 [Backend] ${flashcardsData.flashcards.length} tarjetas detectadas`);
+        
         if (flashcardsData.flashcards.length === 0) {
-          console.warn('⚠️ [Backend] No se extrajeron tarjetas de la respuesta');
-          return res.status(400).json({
-            error: 'No se pudieron extraer tarjetas de estudio del contenido.',
+          console.warn('⚠️ [Backend] No se extrajeron tarjetas, devolviendo texto plano');
+          return res.json({ 
+            success: true, 
+            flashcards: [], 
+            raw: result,
+            message: 'No se detectaron tarjetas en el formato esperado. Se devuelve el texto completo.'
           });
         }
-
-        console.log(`✅ [Backend] ${flashcardsData.flashcards.length} tarjetas generadas`);
+        
+        // ✅ DEVOLVER FLASHCARDS ESTRUCTURADOS
         return res.json({
           success: true,
           flashcards: flashcardsData.flashcards,
-          count: flashcardsData.count,
-          // 🔥 NUEVO: Enviamos también el texto plano como fallback por si el frontend no puede parsear
-          raw: result
+          count: flashcardsData.count
         });
-      } catch (flashcardError) {
-        console.error('❌ [Backend] Error generando Flashcards:', flashcardError);
-        return res.status(500).json({
-          error: 'Error al generar las tarjetas de estudio',
-          details: flashcardError.message,
+      } catch (error) {
+        console.error('❌ [Backend] Error generando Flashcards:', error);
+        return res.status(500).json({ 
+          error: 'Error al generar las tarjetas', 
+          details: error.message,
+          raw: result 
         });
       }
     }
 
     // ========== CASO SUMMARY ==========
-    console.log(`✅ [Backend] Resumen generado (${result.length} caracteres)`);
     return res.json({ success: true, result });
+    
   } catch (error) {
-    console.error('❌ [Backend] Error en processFileController:', error);
-    return res.status(500).json({
-      error: error.message || 'Ocurrió un error al procesar el archivo.',
-    });
+    console.error('❌ [Backend] Error:', error);
+    return res.status(500).json({ error: error.message || 'Error al procesar' });
   }
 };
 
