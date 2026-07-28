@@ -68,6 +68,9 @@ Texto:\n${text}`;
 
 // ========== PARSEAR FLASHCARDS ==========
 const parseFlashcardsResponse = (geminiText) => {
+  console.log('📚 [parseFlashcardsResponse] Iniciando parseo...');
+  console.log('📚 [parseFlashcardsResponse] Texto a parsear (primeros 200 caracteres):', geminiText.substring(0, 200));
+  
   const flashcards = [];
   const lines = geminiText.split('\n').filter(line => line.trim());
   let currentQuestion = '';
@@ -98,6 +101,7 @@ const parseFlashcardsResponse = (geminiText) => {
     flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
   }
   
+  console.log(`📚 [parseFlashcardsResponse] ${flashcards.length} tarjetas extraídas`);
   return { flashcards, count: flashcards.length };
 };
 
@@ -140,6 +144,8 @@ export const processFileController = async (req, res) => {
     console.log('📎 [Backend] Archivo:', req.file ? req.file.originalname : 'No file');
 
     const { action, text } = req.body;
+    console.log('🎯 [Backend] Acción recibida:', action);
+
     let finalText = text?.trim() || '';
 
     if (req.file) {
@@ -186,12 +192,12 @@ export const processFileController = async (req, res) => {
         console.log(`📚 [Backend] ${flashcardsData.flashcards.length} tarjetas detectadas`);
         
         if (flashcardsData.flashcards.length === 0) {
-          console.warn('⚠️ [Backend] No se extrajeron tarjetas, devolviendo texto plano');
+          console.warn('⚠️ [Backend] No se extrajeron tarjetas');
           return res.json({ 
             success: true, 
             flashcards: [], 
             raw: result,
-            message: 'No se detectaron tarjetas en el formato esperado. Se devuelve el texto completo.'
+            message: 'No se detectaron tarjetas.'
           });
         }
         
@@ -212,6 +218,7 @@ export const processFileController = async (req, res) => {
     }
 
     // ========== CASO SUMMARY ==========
+    console.log(`✅ [Backend] Respondiendo con resumen (${result.length} caracteres)`);
     return res.json({ success: true, result });
     
   } catch (error) {
