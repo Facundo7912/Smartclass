@@ -3,6 +3,9 @@ import { processFile } from '../services/ai.service';
 import Flashcard from './Flashcard';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 // ========== LOADING INDICATOR ==========
 const LoadingIndicator = ({ status }) => {
@@ -220,10 +223,20 @@ const AIProcessor = () => {
             <Flashcard
               key={index}
               question={
-                <ReactMarkdown>{card.question || `Pregunta ${index + 1}`}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                >
+                  {card.question || `Pregunta ${index + 1}`}
+                </ReactMarkdown>
               }
               answer={
-                <ReactMarkdown>{card.answer || 'Sin respuesta'}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                >
+                  {card.answer || 'Sin respuesta'}
+                </ReactMarkdown>
               }
             />
           ))}
@@ -232,6 +245,7 @@ const AIProcessor = () => {
     );
   };
 
+  // ========== RENDER SUMMARY CON ECUACIONES ==========
   const renderSummary = () => {
     if (action !== 'summary') return null;
     if (!result || result.type !== 'text') return null;
@@ -242,8 +256,9 @@ const AIProcessor = () => {
           <span className="text-3xl">📝</span> Resumen
         </h2>
         <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm prose prose-slate max-w-none">
-          <ReactMarkdown 
-            remarkPlugins={[remarkGfm]}
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
           >
             {result.data}
           </ReactMarkdown>
