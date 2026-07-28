@@ -19,7 +19,7 @@ const CourseList = ({ refreshTrigger, onEdit }) => {
       setCourses(data)
       setEmpty(Array.isArray(data) && data.length === 0)
     } catch (err) {
-      setError('No se pudieron cargar los cursos. Intentá de nuevo.')
+      setError('No se pudieron cargar los cursos.')
       setCourses([])
     } finally {
       setLoading(false)
@@ -39,84 +39,68 @@ const CourseList = ({ refreshTrigger, onEdit }) => {
     setLoading(true)
 
     try {
-      const id = course.id ?? course._id
-      console.log('🔍 CourseList handleDelete', { id, course })
-      const deletedCourse = await deleteCourse(id)
-      console.log('🔍 deleteCourse result', deletedCourse)
+      await deleteCourse(course.id ?? course._id)
       setFeedback('Curso eliminado correctamente.')
       await loadCourses()
     } catch (err) {
-      console.error('🔍 CourseList delete error', err)
-      const message = err?.response?.data?.error || err?.message || 'No se pudo eliminar el curso.'
-      setError(message)
+      setError('No se pudo eliminar el curso.')
     } finally {
       setLoading(false)
     }
   }
 
+  if (loading) return <div className="card-paper p-4 text-center text-[#4A3728]">Cargando cursos...</div>
+  if (error) return (
+    <div className="card-paper p-4 text-center">
+      <p className="text-red-600 text-sm">{error}</p>
+      <button className="btn-secondary py-1.5 px-4 text-sm mt-2" onClick={loadCourses}>
+        Reintentar
+      </button>
+    </div>
+  )
+  if (empty) return <div className="card-paper p-4 text-center text-[#4A3728]">No hay cursos. Creá el primero.</div>
+
   return (
-    <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-6 space-y-10">
-      <div>
-        <h2 className="text-h2-mobile md:text-[30px] font-semibold text-primary leading-tight">Lista de cursos</h2>
+    <div className="card-paper p-4 space-y-3">
+      <div className="flex items-center justify-between border-b border-[#EADBC8] pb-2">
+        <h3 className="text-sm font-semibold text-[#3E2723]">Lista de cursos</h3>
+        <span className="text-xs text-[#B8865C]">{courses.length} cursos</span>
       </div>
 
-      {loading && <p className="text-secondary">Cargando cursos...</p>}
+      {feedback && <p className="text-sm text-green-700 bg-green-50 px-3 py-1.5 rounded-lg">{feedback}</p>}
 
-      {error && (
-        <div className="space-y-3">
-          <p className="text-red-600">{error}</p>
-          <button
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-            type="button"
-            onClick={() => loadCourses()}
+      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+        {courses.map((course) => (
+          <div
+            key={course.id ?? course._id}
+            className="bg-[#FFFCF8] border border-[#EADBC8] rounded-lg p-3 hover:shadow-md transition-shadow flex items-center justify-between gap-3"
           >
-            Reintentar
-          </button>
-        </div>
-      )}
-
-      {feedback && <p className="text-green-600">{feedback}</p>}
-
-      {!loading && !error && empty && (
-        <p className="text-secondary">Todavía no tenés cursos. Creá el primero.</p>
-      )}
-
-      {!loading && !error && courses.length > 0 && (
-        <div className="flex flex-col gap-4">
-          {courses.map((course) => (
-            <div
-              key={course.id ?? course._id}
-              className="w-full bg-white border border-outline-variant rounded-xl p-5 flex flex-col justify-between items-start gap-4 hover:border-primary transition-colors"
-            >
-              <div className="space-y-4 flex-1 min-w-0">
-                <span className="inline-flex px-2 py-1 bg-primary-container text-white text-[10px] font-bold tracking-wider rounded uppercase">
-                  {course.id ?? course._id}
-                </span>
-                <div>
-                  <p className="text-lg font-bold text-primary mb-1 break-words">{course.name}</p>
-                  <p className="text-secondary text-sm mb-4 line-clamp-3 break-words">{course.description}</p>
-                </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#B8865C]">📌</span>
+                <span className="text-sm font-semibold text-[#3E2723] truncate">{course.name}</span>
               </div>
-              <div className="mt-4 w-full flex gap-2 flex-wrap">
-                <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm rounded-lg"
-                  type="button"
-                  onClick={() => onEdit?.(course)}
-                >
-                  Editar
-                </button>
-                <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm rounded-lg"
-                  type="button"
-                  onClick={() => handleDelete(course)}
-                >
-                  Eliminar
-                </button>
-              </div>
+              {course.description && (
+                <p className="text-xs text-[#4A3728] truncate mt-0.5">{course.description}</p>
+              )}
             </div>
-          ))}
-        </div>
-      )}
+            <div className="flex gap-1.5 flex-shrink-0">
+              <button
+                className="text-xs bg-[#D97706] hover:bg-[#B45309] text-white px-3 py-1 rounded transition-colors"
+                onClick={() => onEdit?.(course)}
+              >
+                Editar
+              </button>
+              <button
+                className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition-colors"
+                onClick={() => handleDelete(course)}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

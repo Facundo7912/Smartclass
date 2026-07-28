@@ -67,13 +67,13 @@ const App = () => {
           <Route
             path="/cursos"
             element={
-              <section className="space-y-8">
+              <section className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-semibold text-[#3E2723] flex items-center gap-2">
                     <span className="pin w-5 h-5 inline-block"></span> Gestión de Cursos
                   </h2>
                 </div>
-                <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+                <div className="grid gap-6 lg:grid-cols-1 xl:grid-cols-[1.2fr_1fr]">
                   <CourseForm onCourseCreated={handleCourseCreated} />
                   <CourseList refreshTrigger={refreshCourses} />
                 </div>

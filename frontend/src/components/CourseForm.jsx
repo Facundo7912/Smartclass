@@ -20,11 +20,7 @@ const CourseForm = ({ onCourseCreated, editingCourse, onCancelEdit }) => {
 
   useEffect(() => {
     if (!success) return
-
-    const timer = window.setTimeout(() => {
-      setSuccess('')
-    }, 3000)
-
+    const timer = window.setTimeout(() => setSuccess(''), 3000)
     return () => window.clearTimeout(timer)
   }, [success])
 
@@ -40,18 +36,14 @@ const CourseForm = ({ onCourseCreated, editingCourse, onCancelEdit }) => {
     setLoading(true)
 
     try {
-      console.log('🔍 CourseForm handleSubmit', { editingCourse, name, description })
-
       if (editingCourse) {
-        const updatedCourse = await updateCourse(editingCourse.id ?? editingCourse._id, {
+        await updateCourse(editingCourse.id ?? editingCourse._id, {
           name: name.trim(),
           description: description.trim()
         })
-        console.log('🔍 updateCourse result', updatedCourse)
         setSuccess('Curso actualizado correctamente.')
       } else {
-        const createdCourse = await createCourse({ name: name.trim(), description: description.trim() })
-        console.log('🔍 createCourse result', createdCourse)
+        await createCourse({ name: name.trim(), description: description.trim() })
         setSuccess('Curso creado correctamente.')
       }
 
@@ -60,43 +52,46 @@ const CourseForm = ({ onCourseCreated, editingCourse, onCancelEdit }) => {
       onCourseCreated?.()
       onCancelEdit?.()
     } catch (err) {
-      console.error('🔍 CourseForm submit error', err)
-      const message = err?.response?.data?.error || err?.message || (editingCourse ? 'No se pudo actualizar el curso.' : 'No se pudo crear el curso.')
-      setError(message)
+      setError(editingCourse ? 'No se pudo actualizar el curso.' : 'No se pudo crear el curso.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <form className="grid gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8" onSubmit={handleSubmit}>
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900">{editingCourse ? 'Editar curso' : 'Nuevo curso'}</h2>
-      </div>
-      {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
-      {success && <p className="text-sm font-medium text-emerald-700">{success}</p>}
-      <label className="grid gap-2">
-        <span className="text-sm font-medium text-slate-700">Nombre</span>
+    <form className="card-paper p-5 space-y-3" onSubmit={handleSubmit}>
+      <h2 className="text-lg font-semibold text-[#3E2723] flex items-center gap-2 border-b border-[#EADBC8] pb-2">
+        <span className="pin w-4 h-4 inline-block"></span>
+        {editingCourse ? 'Editar curso' : 'Nuevo curso'}
+      </h2>
+      
+      {error && <p className="text-sm font-medium text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">{error}</p>}
+      {success && <p className="text-sm font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-lg">{success}</p>}
+      
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-[#4A3728]">Nombre</label>
         <input
-          className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+          className="input-paper py-2 px-3 text-sm"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Nombre del curso"
+          placeholder="Ej: Matemática Avanzada"
         />
-      </label>
-      <label className="grid gap-2">
-        <span className="text-sm font-medium text-slate-700">Descripción</span>
+      </div>
+      
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-[#4A3728]">Descripción</label>
         <textarea
-          className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+          className="input-paper py-2 px-3 text-sm min-h-[60px] max-h-[100px]"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          placeholder="Descripción del curso"
-          rows={5}
+          placeholder="Describe brevemente el curso..."
+          rows={2}
         />
-      </label>
-      <div className="flex flex-wrap items-center gap-3">
+      </div>
+      
+      <div className="flex flex-wrap items-center gap-3 pt-1">
         <button
-          className="inline-flex min-w-[180px] items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="btn-primary py-2 px-5 text-sm min-w-[120px]"
           type="submit"
           disabled={loading}
         >
@@ -104,7 +99,7 @@ const CourseForm = ({ onCourseCreated, editingCourse, onCancelEdit }) => {
         </button>
         {editingCourse && (
           <button
-            className="inline-flex min-w-[180px] items-center justify-center rounded-2xl bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-300"
+            className="btn-secondary py-2 px-5 text-sm"
             type="button"
             onClick={() => onCancelEdit?.()}
           >
