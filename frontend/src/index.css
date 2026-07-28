@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ========== ESTILOS GLOBALES ========== */
 html,
 body,
 #root {
@@ -10,138 +13,146 @@ body,
 
 body {
   margin: 0;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #eef2ff;
-  color: #111827;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #D4A574;
+  background-image: url('https://www.transparenttextures.com/patterns/cork-board.png');
+  background-blend-mode: multiply;
+  color: #3E2723;
 }
 
-* {
-  box-sizing: border-box;
+/* ========== SCROLLBAR ========== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #EADBC8;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #B8865C;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8A6040;
 }
 
-a {
-  color: inherit;
-}
+/* ========== COMPONENTES PERSONALIZADOS ========== */
+@layer components {
+  /* Tarjeta de papel */
+  .card-paper {
+    @apply bg-[#FFF8F0] rounded-xl shadow-md p-6 border border-[#EADBC8] transition-all hover:shadow-lg;
+  }
+  
+  /* Botón principal (naranja) */
+  .btn-primary {
+    @apply bg-[#D97706] hover:bg-[#B45309] text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  /* Botón secundario (marrón) */
+  .btn-secondary {
+    @apply bg-[#8A6040] hover:bg-[#6A4A30] text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5;
+  }
+  
+  /* Botón de peligro (rojo) */
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5;
+  }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-/* Flashcard styles */
-.flashcard {
-  perspective: 1000px;
-  width: 100%;
-  max-width: 340px;
-  aspect-ratio: 4 / 3;
-  cursor: pointer;
-  margin: 0 auto;
-}
-
-.flashcard-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-  transform-style: preserve-3d;
-}
-
-.flashcard.flipped .flashcard-inner {
-  transform: rotateY(180deg);
-}
-
-.flashcard-front,
-.flashcard-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 24px 20px;
-  text-align: center;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
-}
-
-.flashcard-front {
-  background: #ffffff;
-  color: #0a2a44;
-  transform: rotateY(0deg);
-}
-
-.flashcard-front .flashcard-icon {
-  font-size: 32px;
-  margin-bottom: 12px;
-}
-
-.flashcard-back {
-  background: #f0f7ff;
-  color: #1e293b;
-  transform: rotateY(180deg);
-  border-color: #93c5fd;
-}
-
-.flashcard-back .flashcard-icon {
-  font-size: 32px;
-  margin-bottom: 12px;
-}
-
-/* Responsive */
-@media (max-width: 640px) {
-  .flashcard {
-    max-width: 280px;
+  /* Chincheta decorativa */
+  .pin {
+    @apply inline-block w-6 h-6 rounded-full shadow-md;
+    background: radial-gradient(circle at 30% 30%, #ef4444, #b91c1c);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3);
+  }
+  
+  /* Input estilo papel */
+  .input-paper {
+    @apply w-full rounded-lg border border-[#EADBC8] bg-[#FFFCF8] px-4 py-3 text-[#3E2723] placeholder-[#B8865C] focus:outline-none focus:ring-2 focus:ring-[#D97706] focus:border-transparent transition-all;
+  }
+  
+  /* Texto con estilo manuscrito */
+  .text-handwritten {
+    @apply font-handwriting text-[#4A3728];
   }
 }
-/* Estilos para el contenido Markdown */
+
+/* ========== ESTILOS PARA MARKDOWN ========== */
+.prose {
+  @apply text-[#3E2723] max-w-none;
+}
+
 .prose h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #0a2a44;
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
+  @apply text-3xl font-bold text-[#4A3728] mt-6 mb-3;
 }
 
 .prose h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #0a2a44;
-  margin-top: 1.25rem;
-  margin-bottom: 0.5rem;
+  @apply text-2xl font-semibold text-[#4A3728] mt-5 mb-2;
 }
 
 .prose h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.prose ul {
-  list-style-type: disc;
-  padding-left: 1.5rem;
-}
-
-.prose ol {
-  list-style-type: decimal;
-  padding-left: 1.5rem;
-}
-
-.prose li {
-  margin-bottom: 0.25rem;
-}
-
-.prose strong {
-  font-weight: 600;
-  color: #0f172a;
+  @apply text-xl font-semibold text-[#4A3728] mt-4 mb-2;
 }
 
 .prose p {
-  margin-bottom: 0.75rem;
-  line-height: 1.6;
+  @apply mb-3 leading-relaxed;
+}
+
+.prose ul, .prose ol {
+  @apply pl-5 mb-3;
+}
+
+.prose li {
+  @apply mb-1;
+}
+
+.prose strong {
+  @apply font-semibold text-[#3E2723];
+}
+
+.prose a {
+  @apply text-[#D97706] hover:text-[#B45309] underline;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-[#D97706] pl-4 italic text-[#4A3728] my-4;
+}
+
+.prose code {
+  @apply bg-[#F5F0E8] px-1.5 py-0.5 rounded text-sm font-mono text-[#3E2723];
+}
+
+/* KaTeX (ecuaciones) */
+.katex-display {
+  @apply my-4 overflow-x-auto;
+}
+
+/* ========== ANIMACIONES ========== */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+  100% { transform: translateY(0px); }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 640px) {
+  .card-paper {
+    @apply p-4;
+  }
+  
+  .prose h1 {
+    @apply text-2xl;
+  }
+  
+  .prose h2 {
+    @apply text-xl;
+  }
+  
+  .prose h3 {
+    @apply text-lg;
+  }
 }

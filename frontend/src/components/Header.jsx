@@ -2,40 +2,52 @@ import { NavLink } from 'react-router-dom'
 
 const Header = () => {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 bg-white shadow-sm border-b border-slate-200">
-      <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight text-slate-900">SmartClass</h1>
-          <p className="text-sm text-slate-500">Administra cursos y clases desde una interfaz profesional.</p>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#4A3728] border-b-2 border-[#B8865C] shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center gap-2">
+            <span className="pin w-5 h-5 inline-block"></span>
+            <span className="text-xl font-bold text-[#FFF8F0]">SmartClass</span>
+          </div>
+          <nav className="flex items-center space-x-6">
+            <NavLink
+              to="/cursos"
+              className={({ isActive }) =>
+                `text-sm font-medium transition-colors ${
+                  isActive 
+                    ? 'text-[#D97706] border-b-2 border-[#D97706] pb-1' 
+                    : 'text-[#D4A574] hover:text-[#FFF8F0]'
+                }`
+              }
+            >
+              Cursos
+            </NavLink>
+            <NavLink
+              to="/clases"
+              className={({ isActive }) =>
+                `text-sm font-medium transition-colors ${
+                  isActive 
+                    ? 'text-[#D97706] border-b-2 border-[#D97706] pb-1' 
+                    : 'text-[#D4A574] hover:text-[#FFF8F0]'
+                }`
+              }
+            >
+              Clases
+            </NavLink>
+            <NavLink
+              to="/procesar"
+              className={({ isActive }) =>
+                `text-sm font-medium transition-colors ${
+                  isActive 
+                    ? 'text-[#D97706] border-b-2 border-[#D97706] pb-1' 
+                    : 'text-[#D4A574] hover:text-[#FFF8F0]'
+                }`
+              }
+            >
+              Procesar con IA
+            </NavLink>
+          </nav>
         </div>
-        <nav className="flex flex-wrap items-center gap-3">
-          <NavLink
-            to="/cursos"
-            className={({ isActive }) =>
-              `rounded-full px-4 py-2 text-sm font-semibold transition ${
-                isActive ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
-              }`
-            }
-          >
-            Cursos
-          </NavLink>
-          <NavLink
-            to="/clases"
-            className={({ isActive }) =>
-              `rounded-full px-4 py-2 text-sm font-semibold transition ${
-                isActive ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
-              }`
-            }
-          >
-            Clases
-          </NavLink>
-                    
-          <NavLink to="/procesar" className={({ isActive }) => 
-            `text-sm font-medium transition-colors ${isActive ? 'text-blue-700' : 'text-slate-600 hover:text-blue-600'}`
-          }>
-            IA
-          </NavLink>
-        </nav>
       </div>
     </header>
   )
