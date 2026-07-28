@@ -48,24 +48,20 @@ const getPromptByAction = (action, text) => {
     case 'summary':
       return `Eres un asistente que genera resúmenes académicos. A partir del siguiente texto, genera un RESUMEN ESTRUCTURADO Y CONCISO. No copies el texto original. Extrae las ideas principales, los conceptos clave y las conclusiones en un texto continuo de entre 200 y 300 palabras.\n\nTexto a resumir:\n${text}`;
     case 'flashcards':
-      // ✅ PROMPT MUY ESTRICTO Y CLARO
-      return `Genera EXACTAMENTE 4 tarjetas de estudio basadas en el siguiente texto. Las tarjetas deben ser preguntas y respuestas sobre los conceptos más importantes.
+      // ✅ PROMPT MUY SIMPLE Y DIRECTO
+      return `Genera 4 preguntas y respuestas sobre el siguiente texto. Responde en el siguiente formato simple:
 
-DEBES USAR EL SIGUIENTE FORMATO EXACTO:
+Pregunta 1: ...?
+Respuesta 1: ...
 
-Pregunta 1: [escribe la pregunta sobre un concepto clave del texto]
-Respuesta 1: [escribe la respuesta concisa]
+Pregunta 2: ...?
+Respuesta 2: ...
 
-Pregunta 2: [escribe la pregunta sobre un concepto clave del texto]
-Respuesta 2: [escribe la respuesta concisa]
+Pregunta 3: ...?
+Respuesta 3: ...
 
-Pregunta 3: [escribe la pregunta sobre un concepto clave del texto]
-Respuesta 3: [escribe la respuesta concisa]
-
-Pregunta 4: [escribe la pregunta sobre un concepto clave del texto]
-Respuesta 4: [escribe la respuesta concisa]
-
-NO escribas nada más que estas 4 tarjetas. NO incluyas introducción, NO incluyas conclusión, NO incluyas títulos ni secciones. SOLO las tarjetas en el formato exacto indicado.
+Pregunta 4: ...?
+Respuesta 4: ...
 
 Texto:\n${text}`;
     case 'ppt':
@@ -78,11 +74,10 @@ Texto:\n${text}`;
 // ========== PARSEAR FLASHCARDS MEJORADO ==========
 const parseFlashcardsResponse = (geminiText) => {
   console.log('📚 [parseFlashcardsResponse] Iniciando parseo...');
-  console.log('📚 [parseFlashcardsResponse] Texto a parsear (primeros 200 caracteres):', geminiText.substring(0, 200));
   
   const flashcards = [];
   
-  // 🔥 INTENTO 1: Buscar "Pregunta X:" y "Respuesta X:"
+  // 🔥 Buscar "Pregunta X:" y "Respuesta X:"
   const lines = geminiText.split('\n').filter(line => line.trim());
   let currentQuestion = '';
   let currentAnswer = '';
@@ -91,7 +86,6 @@ const parseFlashcardsResponse = (geminiText) => {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     
-    // Buscar "Pregunta X:" (con o sin número)
     if (line.match(/^pregunta\s*(\d+)?\s*[:.]/i)) {
       if (currentQuestion && currentAnswer) {
         flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
@@ -100,101 +94,18 @@ const parseFlashcardsResponse = (geminiText) => {
       }
       currentQuestion = line.replace(/^pregunta\s*(\d+)?\s*[:.]\s*/i, '').trim();
       isAnswer = false;
-    } 
-    // Buscar "Respuesta X:" (con o sin número)
-    else if (line.match(/^respuesta\s*(\d+)?\s*[:.]/i)) {
+    } else if (line.match(/^respuesta\s*(\d+)?\s*[:.]/i)) {
       currentAnswer = line.replace(/^respuesta\s*(\d+)?\s*[:.]\s*/i, '').trim();
       isAnswer = true;
-    } 
-    // Si estamos en una respuesta y hay más líneas
-    else if (isAnswer && currentAnswer) {
+    } else if (isAnswer && currentAnswer) {
       currentAnswer += ' ' + line;
-    } 
-    // Si estamos en una pregunta y hay más líneas
-    else if (!isAnswer && currentQuestion) {
+    } else if (!isAnswer && currentQuestion) {
       currentQuestion += ' ' + line;
     }
   }
   
   if (currentQuestion && currentAnswer) {
     flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
-  }
-  
-  // 🔥 INTENTO 2: Si no se encontraron tarjetas, buscar patrones "¿...?" y "R:"
-  if (flashcards.length === 0) {
-    console.log('📚 [parseFlashcardsResponse] No se encontraron tarjetas con formato "Pregunta X:", buscando otros patrones...');
-    
-    // Buscar preguntas con signos de interrogación y respuestas
-    const sections = geminiText.split(/\n\s*\n/);
-    let tempQuestion = '';
-    let tempAnswer = '';
-    
-    for (const section of sections) {
-      const lines2 = section.split('\n').filter(line => line.trim());
-      let hasQuestion = false;
-      let questionText = '';
-      let answerText = '';
-      
-      for (const line of lines2) {
-        const trimmed = line.trim();
-        // Si la línea tiene un signo de interrogación y no es muy larga
-        if (trimmed.includes('?') && trimmed.length < 100 && !trimmed.startsWith('¿')) {
-          if (hasQuestion && questionText && answerText) {
-            flashcards.push({ question: questionText.trim(), answer: answerText.trim() });
-            questionText = '';
-            answerText = '';
-          }
-          questionText = trimmed;
-          hasQuestion = true;
-          answerText = '';
-        } else if (hasQuestion && !trimmed.includes('?') && !trimmed.startsWith('-') && !trimmed.startsWith('*')) {
-          if (!answerText) {
-            answerText = trimmed;
-          } else {
-            answerText += ' ' + trimmed;
-          }
-        }
-      }
-      
-      if (questionText && answerText) {
-        flashcards.push({ question: questionText.trim(), answer: answerText.trim() });
-      }
-    }
-  }
-  
-  // 🔥 INTENTO 3: Si aún no hay tarjetas, buscar patrones "P: " y "R: "
-  if (flashcards.length === 0) {
-    console.log('📚 [parseFlashcardsResponse] Buscando patrones "P:" y "R:"...');
-    const lines3 = geminiText.split('\n').filter(line => line.trim());
-    let q = '';
-    let a = '';
-    let isQ = false;
-    let isA = false;
-    
-    for (const line of lines3) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('P:')) {
-        if (q && a) {
-          flashcards.push({ question: q.trim(), answer: a.trim() });
-          q = '';
-          a = '';
-        }
-        q = trimmed.replace(/^P:\s*/i, '').trim();
-        isQ = true;
-        isA = false;
-      } else if (trimmed.startsWith('R:')) {
-        a = trimmed.replace(/^R:\s*/i, '').trim();
-        isA = true;
-        isQ = false;
-      } else if (isQ && !isA && q) {
-        q += ' ' + trimmed;
-      } else if (isA && a) {
-        a += ' ' + trimmed;
-      }
-    }
-    if (q && a) {
-      flashcards.push({ question: q.trim(), answer: a.trim() });
-    }
   }
   
   console.log(`📚 [parseFlashcardsResponse] ${flashcards.length} tarjetas extraídas`);
@@ -287,21 +198,22 @@ export const processFileController = async (req, res) => {
         const flashcardsData = parseFlashcardsResponse(result);
         console.log(`📚 [Backend] ${flashcardsData.flashcards.length} tarjetas detectadas`);
         
-        if (flashcardsData.flashcards.length === 0) {
-          console.warn('⚠️ [Backend] No se extrajeron tarjetas');
-          return res.json({ 
-            success: true, 
-            flashcards: [], 
-            raw: result,
-            message: 'No se detectaron tarjetas.'
+        // ✅ Si se extrajeron tarjetas, devolverlas
+        if (flashcardsData.flashcards.length > 0) {
+          return res.json({
+            success: true,
+            flashcards: flashcardsData.flashcards,
+            count: flashcardsData.count
           });
         }
         
-        // ✅ DEVOLVER FLASHCARDS ESTRUCTURADOS
-        return res.json({
-          success: true,
-          flashcards: flashcardsData.flashcards,
-          count: flashcardsData.count
+        // ✅ Si no se extrajeron tarjetas, devolver el texto completo
+        console.warn('⚠️ [Backend] No se extrajeron tarjetas, devolviendo texto completo');
+        return res.json({ 
+          success: true, 
+          flashcards: [], 
+          raw: result,
+          message: 'No se detectaron tarjetas. Se devuelve el texto completo.'
         });
       } catch (error) {
         console.error('❌ [Backend] Error generando Flashcards:', error);
