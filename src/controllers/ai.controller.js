@@ -48,15 +48,22 @@ const getPromptByAction = (action, text) => {
     case 'summary':
       return `Eres un asistente que genera resúmenes académicos. A partir del siguiente texto, genera un RESUMEN ESTRUCTURADO Y CONCISO. No copies el texto original. Extrae las ideas principales, los conceptos clave y las conclusiones en un texto continuo de entre 200 y 300 palabras.\n\nTexto a resumir:\n${text}`;
     case 'flashcards':
-      return `A partir del siguiente texto, genera EXACTAMENTE 4 tarjetas de estudio. El formato debe ser EXACTAMENTE:
+      // ✅ PROMPT MEJORADO PARA GEMINI
+      return `A partir del siguiente texto, genera EXACTAMENTE 4 tarjetas de estudio. El formato debe ser EXACTAMENTE el siguiente, sin nada más:
 
-Pregunta: [escribe aquí la pregunta sobre un concepto clave del texto]
-Respuesta: [escribe aquí la respuesta concisa y directa]
+Pregunta 1: [escribe aquí la pregunta sobre un concepto clave del texto]
+Respuesta 1: [escribe aquí la respuesta concisa y directa]
 
-Pregunta: [segunda pregunta]
-Respuesta: [segunda respuesta]
+Pregunta 2: [escribe aquí la pregunta sobre un concepto clave del texto]
+Respuesta 2: [escribe aquí la respuesta concisa y directa]
 
-(Repite el formato para las 4 tarjetas. Las preguntas deben ser relevantes y las respuestas claras. Usa el formato literal "Pregunta:" y "Respuesta:" para cada tarjeta.)
+Pregunta 3: [escribe aquí la pregunta sobre un concepto clave del texto]
+Respuesta 3: [escribe aquí la respuesta concisa y directa]
+
+Pregunta 4: [escribe aquí la pregunta sobre un concepto clave del texto]
+Respuesta 4: [escribe aquí la respuesta concisa y directa]
+
+NO agregues introducción, ni conclusión, ni nada más. Solo las 4 tarjetas en el formato indicado.
 
 Texto:\n${text}`;
     case 'ppt':
@@ -72,6 +79,8 @@ const parseFlashcardsResponse = (geminiText) => {
   console.log('📚 [parseFlashcardsResponse] Texto a parsear (primeros 200 caracteres):', geminiText.substring(0, 200));
   
   const flashcards = [];
+  
+  // 🔥 Buscar patrones "Pregunta X:" y "Respuesta X:"
   const lines = geminiText.split('\n').filter(line => line.trim());
   let currentQuestion = '';
   let currentAnswer = '';
@@ -79,20 +88,28 @@ const parseFlashcardsResponse = (geminiText) => {
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (line.toLowerCase().startsWith('pregunta:')) {
+    
+    // Buscar "Pregunta X:" (con o sin número)
+    if (line.match(/^pregunta\s*(\d+)?\s*[:.]/i)) {
       if (currentQuestion && currentAnswer) {
         flashcards.push({ question: currentQuestion.trim(), answer: currentAnswer.trim() });
         currentQuestion = '';
         currentAnswer = '';
       }
-      currentQuestion = line.replace(/^pregunta:\s*/i, '').trim();
+      currentQuestion = line.replace(/^pregunta\s*(\d+)?\s*[:.]\s*/i, '').trim();
       isAnswer = false;
-    } else if (line.toLowerCase().startsWith('respuesta:')) {
-      currentAnswer = line.replace(/^respuesta:\s*/i, '').trim();
+    } 
+    // Buscar "Respuesta X:" (con o sin número)
+    else if (line.match(/^respuesta\s*(\d+)?\s*[:.]/i)) {
+      currentAnswer = line.replace(/^respuesta\s*(\d+)?\s*[:.]\s*/i, '').trim();
       isAnswer = true;
-    } else if (isAnswer && currentAnswer) {
+    } 
+    // Si estamos en una respuesta y hay más líneas
+    else if (isAnswer && currentAnswer) {
       currentAnswer += ' ' + line;
-    } else if (!isAnswer && currentQuestion) {
+    } 
+    // Si estamos en una pregunta y hay más líneas
+    else if (!isAnswer && currentQuestion) {
       currentQuestion += ' ' + line;
     }
   }
